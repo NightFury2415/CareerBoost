@@ -133,7 +133,9 @@ export default function ResumePreview({ data }: any) {
           >
             EXPERIENCE
           </h2>
-          <div style={{ space: "12px" }}>
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "20px" }}
+          >
             {data.experience.map((exp: any, idx: number) => (
               <div key={idx} style={{ fontSize: "12px", marginBottom: "12px" }}>
                 <div
@@ -160,7 +162,14 @@ export default function ResumePreview({ data }: any) {
                   <span>{exp.company}</span>
                   <span>{exp.location}</span>
                 </div>
-                <ul style={{ marginLeft: "16px", space: "2px" }}>
+                <ul
+                  style={{
+                    marginLeft: "16px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "4px",
+                  }}
+                >
                   {exp.bullets.map((bullet: string, bidx: number) => (
                     <li
                       key={bidx}
@@ -188,7 +197,9 @@ export default function ResumePreview({ data }: any) {
           >
             PROJECTS
           </h2>
-          <div style={{ space: "12px" }}>
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "16px" }}
+          >
             {data.projects.map((proj: any, idx: number) => (
               <div key={idx} style={{ fontSize: "12px", marginBottom: "12px" }}>
                 <div
@@ -226,7 +237,7 @@ export default function ResumePreview({ data }: any) {
           >
             EDUCATION
           </h2>
-          <div style={{ space: "8px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
             {data.education.map((edu: any, idx: number) => (
               <div key={idx} style={{ fontSize: "12px", marginBottom: "8px" }}>
                 <div
