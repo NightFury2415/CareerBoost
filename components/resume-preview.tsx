@@ -27,19 +27,32 @@ export default function ResumePreview({ data }: any) {
             flexWrap: "wrap",
             fontSize: "12px",
             marginTop: "8px",
+            alignItems: "center",
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <MapPin width="12" height="12" />
-            {data.personal.location}
+            <MapPin
+              width="12"
+              height="12"
+              style={{ flexShrink: 0, strokeWidth: 2 }}
+            />
+            <span style={{ lineHeight: "1" }}>{data.personal.location}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <Phone width="12" height="12" />
-            {data.personal.phone}
+            <Phone
+              width="12"
+              height="12"
+              style={{ flexShrink: 0, strokeWidth: 2 }}
+            />
+            <span style={{ lineHeight: "1" }}>{data.personal.phone}</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <Mail width="12" height="12" />
-            {data.personal.email}
+            <Mail
+              width="12"
+              height="12"
+              style={{ flexShrink: 0, strokeWidth: 2 }}
+            />
+            <span style={{ lineHeight: "1" }}>{data.personal.email}</span>
           </div>
         </div>
         <div
@@ -50,39 +63,59 @@ export default function ResumePreview({ data }: any) {
             flexWrap: "wrap",
             fontSize: "12px",
             marginTop: "4px",
+            alignItems: "center",
           }}
         >
           {data.personal.website && (
             <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              <Globe width="12" height="12" />
-              {data.personal.website}
+              <Globe
+                width="12"
+                height="12"
+                style={{ flexShrink: 0, strokeWidth: 2 }}
+              />
+              <span style={{ lineHeight: "1" }}>{data.personal.website}</span>
             </div>
           )}
           {data.personal.linkedin && (
             <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              <Linkedin width="12" height="12" />
-              {data.personal.linkedin}
+              <Linkedin
+                width="12"
+                height="12"
+                style={{ flexShrink: 0, strokeWidth: 2 }}
+              />
+              <span style={{ lineHeight: "1" }}>{data.personal.linkedin}</span>
             </div>
           )}
           {data.personal.github && (
             <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              <Github width="12" height="12" />
-              {data.personal.github}
+              <Github
+                width="12"
+                height="12"
+                style={{ flexShrink: 0, strokeWidth: 2 }}
+              />
+              <span style={{ lineHeight: "1" }}>{data.personal.github}</span>
             </div>
           )}
         </div>
       </div>
 
-      <hr style={{ margin: "12px 0", borderColor: "#ccc" }} />
+      <hr
+        style={{
+          margin: "10px 0",
+          border: "none",
+          borderTop: "1px solid #333",
+        }}
+      />
 
       {/* Summary */}
       {data.summary && (
-        <div style={{ marginBottom: "16px" }}>
+        <div style={{ marginBottom: "12px" }}>
           <h2
             style={{
               fontSize: "14px",
               fontWeight: "bold",
-              marginBottom: "4px",
+              marginBottom: "6px",
+              borderBottom: "none",
             }}
           >
             SUMMARY
@@ -93,22 +126,20 @@ export default function ResumePreview({ data }: any) {
 
       {/* Skills */}
       {Object.keys(data.skills).length > 0 && (
-        <div style={{ marginBottom: "16px" }}>
+        <div style={{ marginBottom: "12px" }}>
           <h2
             style={{
               fontSize: "14px",
               fontWeight: "bold",
-              marginBottom: "4px",
+              marginBottom: "6px",
+              borderBottom: "none",
             }}
           >
             SKILLS
           </h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
             {Object.entries(data.skills).map(([category, items]: any) => (
-              <div
-                key={category}
-                style={{ fontSize: "12px", marginBottom: "4px" }}
-              >
+              <div key={category} style={{ fontSize: "12px" }}>
                 <span
                   style={{ fontWeight: "bold", textTransform: "capitalize" }}
                 >
@@ -123,21 +154,22 @@ export default function ResumePreview({ data }: any) {
 
       {/* Experience */}
       {data.experience && data.experience.length > 0 && (
-        <div style={{ marginBottom: "16px" }}>
+        <div style={{ marginBottom: "12px" }}>
           <h2
             style={{
               fontSize: "14px",
               fontWeight: "bold",
-              marginBottom: "8px",
+              marginBottom: "6px",
+              borderBottom: "none",
             }}
           >
             EXPERIENCE
           </h2>
           <div
-            style={{ display: "flex", flexDirection: "column", gap: "20px" }}
+            style={{ display: "flex", flexDirection: "column", gap: "12px" }}
           >
             {data.experience.map((exp: any, idx: number) => (
-              <div key={idx} style={{ fontSize: "12px", marginBottom: "12px" }}>
+              <div key={idx} style={{ fontSize: "12px" }}>
                 <div
                   style={{
                     display: "flex",
@@ -167,14 +199,12 @@ export default function ResumePreview({ data }: any) {
                     marginLeft: "16px",
                     display: "flex",
                     flexDirection: "column",
-                    gap: "4px",
+                    gap: "2px",
+                    lineHeight: "1.6",
                   }}
                 >
                   {exp.bullets.map((bullet: string, bidx: number) => (
-                    <li
-                      key={bidx}
-                      style={{ listStyleType: "disc", marginBottom: "2px" }}
-                    >
+                    <li key={bidx} style={{ listStyleType: "disc" }}>
                       {bullet}
                     </li>
                   ))}
@@ -187,21 +217,22 @@ export default function ResumePreview({ data }: any) {
 
       {/* Projects */}
       {data.projects && data.projects.length > 0 && (
-        <div style={{ marginBottom: "16px" }}>
+        <div style={{ marginBottom: "12px" }}>
           <h2
             style={{
               fontSize: "14px",
               fontWeight: "bold",
-              marginBottom: "8px",
+              marginBottom: "6px",
+              borderBottom: "none",
             }}
           >
             PROJECTS
           </h2>
           <div
-            style={{ display: "flex", flexDirection: "column", gap: "16px" }}
+            style={{ display: "flex", flexDirection: "column", gap: "12px" }}
           >
             {data.projects.map((proj: any, idx: number) => (
-              <div key={idx} style={{ fontSize: "12px", marginBottom: "12px" }}>
+              <div key={idx} style={{ fontSize: "12px" }}>
                 <div
                   style={{
                     display: "flex",
@@ -232,12 +263,15 @@ export default function ResumePreview({ data }: any) {
             style={{
               fontSize: "14px",
               fontWeight: "bold",
-              marginBottom: "8px",
+              marginBottom: "6px",
+              borderBottom: "none",
             }}
           >
             EDUCATION
           </h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "12px" }}
+          >
             {data.education.map((edu: any, idx: number) => (
               <div key={idx} style={{ fontSize: "12px", marginBottom: "8px" }}>
                 <div
