@@ -27,32 +27,31 @@ export default function ResumePreview({ data }: any) {
             flexWrap: "wrap",
             fontSize: "12px",
             marginTop: "8px",
-            alignItems: "center",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+          <div style={{ display: "inline-flex", gap: "4px" }}>
             <MapPin
               width="12"
               height="12"
               style={{ flexShrink: 0, strokeWidth: 2 }}
             />
-            <span style={{ lineHeight: "1" }}>{data.personal.location}</span>
+            <span>{data.personal.location}</span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+          <div style={{ display: "inline-flex", gap: "4px" }}>
             <Phone
               width="12"
               height="12"
               style={{ flexShrink: 0, strokeWidth: 2 }}
             />
-            <span style={{ lineHeight: "1" }}>{data.personal.phone}</span>
+            <span>{data.personal.phone}</span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+          <div style={{ display: "inline-flex", gap: "4px" }}>
             <Mail
               width="12"
               height="12"
               style={{ flexShrink: 0, strokeWidth: 2 }}
             />
-            <span style={{ lineHeight: "1" }}>{data.personal.email}</span>
+            <span>{data.personal.email}</span>
           </div>
         </div>
         <div
@@ -63,37 +62,36 @@ export default function ResumePreview({ data }: any) {
             flexWrap: "wrap",
             fontSize: "12px",
             marginTop: "4px",
-            alignItems: "center",
           }}
         >
           {data.personal.website && (
-            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+            <div style={{ display: "inline-flex", gap: "4px" }}>
               <Globe
                 width="12"
                 height="12"
                 style={{ flexShrink: 0, strokeWidth: 2 }}
               />
-              <span style={{ lineHeight: "1" }}>{data.personal.website}</span>
+              <span>{data.personal.website}</span>
             </div>
           )}
           {data.personal.linkedin && (
-            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+            <div style={{ display: "inline-flex", gap: "4px" }}>
               <Linkedin
                 width="12"
                 height="12"
                 style={{ flexShrink: 0, strokeWidth: 2 }}
               />
-              <span style={{ lineHeight: "1" }}>{data.personal.linkedin}</span>
+              <span>{data.personal.linkedin}</span>
             </div>
           )}
           {data.personal.github && (
-            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+            <div style={{ display: "inline-flex", gap: "4px" }}>
               <Github
                 width="12"
                 height="12"
                 style={{ flexShrink: 0, strokeWidth: 2 }}
               />
-              <span style={{ lineHeight: "1" }}>{data.personal.github}</span>
+              <span>{data.personal.github}</span>
             </div>
           )}
         </div>
@@ -194,21 +192,23 @@ export default function ResumePreview({ data }: any) {
                   <span>{exp.company}</span>
                   <span>{exp.location}</span>
                 </div>
-                <ul
-                  style={{
-                    marginLeft: "16px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "2px",
-                    lineHeight: "1.6",
-                  }}
-                >
+                <div>
                   {exp.bullets.map((bullet: string, bidx: number) => (
-                    <li key={bidx} style={{ listStyleType: "disc" }}>
-                      {bullet}
-                    </li>
+                    <div
+                      key={bidx}
+                      style={{
+                        display: "flex",
+                        gap: "8px",
+                        fontSize: "12px",
+                        lineHeight: "1.6",
+                        marginBottom: "2px",
+                      }}
+                    >
+                      <span style={{ flexShrink: 0 }}>•</span>
+                      <span style={{ flex: 1 }}>{bullet}</span>
+                    </div>
                   ))}
-                </ul>
+                </div>
               </div>
             ))}
           </div>
