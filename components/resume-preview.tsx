@@ -1,6 +1,10 @@
 "use client"
 
 import { Mail, Phone, MapPin, Globe, Linkedin, Github } from "lucide-react"
+import { useRef } from "react"
+import html2canvas from "html2canvas"
+import jsPDF from "jspdf"
+import { Button } from "@/components/ui/button"
 
 export default function ResumePreview({ data }: any) {
   return (

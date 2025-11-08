@@ -1,24 +1,25 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import ResumePreview from "@/components/resume-preview"
-import ResumeEditor from "@/components/resume-editor"
+import { useState } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import ResumePreview from "@/components/resume-preview";
+import ResumeEditor from "@/components/resume-editor";
 
 export default function ResumeBuilder() {
-  const [showPreview, setShowPreview] = useState(true)
+  const [showPreview, setShowPreview] = useState(true);
   const [resumeData, setResumeData] = useState({
     personal: {
-      name: "Your Name",
+      name: "Dev Modi",
       location: "San Francisco, CA",
       phone: "+1 (XXX) XXX-XXXX",
       email: "email@example.com",
       website: "yourwebsite.com",
-      linkedin: "linkedin.com/in/yourprofile",
-      github: "github.com/yourprofile",
+      linkedin: "https://linkedin.com/in/yourprofile",
+      github: "https://github.com/yourprofile",
     },
-    summary: "Software engineer with expertise in building scalable applications.",
+    summary:
+      "Software engineer with expertise in building scalable applications.",
     skills: {
       languages: ["Java", "Python", "JavaScript", "TypeScript"],
       frontend: ["React", "Next.js", "Tailwind CSS"],
@@ -46,7 +47,7 @@ export default function ResumeBuilder() {
         title: "Project Title",
         technologies: ["React", "Node.js", "PostgreSQL"],
         description: "Brief description of your project and what you built.",
-        link: "github.com/yourprofile/project",
+        link: "https://github.com/yourprofile/project",
       },
     ],
     education: [
@@ -59,91 +60,165 @@ export default function ResumeBuilder() {
         location: "San Francisco, CA",
       },
     ],
-  })
+  });
 
-  // Function to download resume as PDF
+  // ✅ PDF Export (uses ResumePreview content directly — no injected header)
   const downloadResume = async () => {
-    const element = document.getElementById("resume-preview")
-    if (element) {
-      try {
-        // Clone the element and remove all Tailwind classes (but skip SVG elements)
-        const clonedElement = element.cloneNode(true) as HTMLElement
-        const allElements = clonedElement.querySelectorAll("*")
-        allElements.forEach((el) => {
-          // Skip SVG elements since they have read-only className properties
-          if (el.tagName.toLowerCase() !== "svg" && el.tagName.toLowerCase() !== "path") {
-            try {
-              el.className = ""
-            } catch (e) {
-              // Silently skip elements that have read-only className
+    const element = document.getElementById("resume-preview");
+    if (!element) return;
+
+    const clonedElement = element.cloneNode(true) as HTMLElement;
+
+    // Create hidden iframe for safe rendering
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "absolute";
+    iframe.style.left = "-9999px";
+    iframe.style.width = "210mm";
+    iframe.style.height = "297mm";
+    iframe.style.background = "#ffffff";
+    document.body.appendChild(iframe);
+
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!iframeDoc) return;
+
+    // Clean stylesheet — no duplicate header injected
+    iframeDoc.open();
+    iframeDoc.write(`
+      <html>
+        <head>
+          <style>
+            @page { size: A4; margin: 0; }
+            html, body {
+              width: 210mm;
+              height: 297mm;
+              margin: 0;
+              padding: 0;
+              background: #fff;
+              overflow: hidden;
             }
-          }
-        })
+            body {
+              font-family: 'Helvetica', 'Arial', sans-serif;
+              color: #111;
+              line-height: 1.6;
+              padding: 24px 36px;
+              transform: scale(0.97);
+              transform-origin: top center;
+              text-align: left;
+            }
 
-        // Create a temporary container with inline styles
-        const tempContainer = document.createElement("div")
-        tempContainer.style.backgroundColor = "#ffffff"
-        tempContainer.style.padding = "0"
-        tempContainer.appendChild(clonedElement)
-        document.body.appendChild(tempContainer)
+            h1, h2, h3 {
+              font-weight: 700;
+              color: #000;
+              margin-bottom: 8px;
+            }
 
-        // Import jsPDF dynamically
-        const { jsPDF } = await import("jspdf")
-        const html2canvas = (await import("html2canvas")).default
+            h1 { font-size: 26px; margin-top: 0; text-align: center; }
+            h2 {
+              font-size: 15px;
+              margin-top: 16px;
+              border-bottom: 1px solid #ddd;
+              padding-bottom: 3px;
+              text-transform: uppercase;
+            }
+            h3 { font-size: 13px; margin-top: 10px; }
 
-        const canvas = await html2canvas(tempContainer, {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          backgroundColor: "#ffffff",
-          windowHeight: tempContainer.scrollHeight,
-        })
+            p, li { font-size: 12px; margin: 2px 0; }
+            ul { margin-left: 18px; text-align: left; }
 
-        // Remove temporary container
-        document.body.removeChild(tempContainer)
+            strong, b { color: #000; }
 
-        const pdf = new jsPDF("p", "mm", "a4")
-        const imgData = canvas.toDataURL("image/png")
-        const imgWidth = 210
-        const imgHeight = (canvas.height * imgWidth) / canvas.width
-        let heightLeft = imgHeight
+            .flex { display: flex; justify-content: space-between; align-items: baseline; }
+            .text-right { text-align: right; }
 
-        let position = 0
+            a {
+              color: #0073e6;
+              text-decoration: none;
+            }
 
-        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight)
-        heightLeft -= 297
+            a:hover {
+              text-decoration: underline;
+            }
 
-        while (heightLeft >= 0) {
-          position = heightLeft - imgHeight
-          pdf.addPage()
-          pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight)
-          heightLeft -= 297
-        }
+            hr {
+              border: none;
+              border-top: 1px solid #ccc;
+              margin: 10px 0;
+            }
 
-        pdf.save(`${resumeData.personal.name.replace(/\s+/g, "_")}_Resume.pdf`)
-      } catch (error) {
-        console.error("Error generating PDF:", error)
-      }
+            /* Ensure all fits within one page */
+            .content-wrapper {
+              height: 100%;
+              overflow: hidden;
+              page-break-inside: avoid;
+            }
+          </style>
+        </head>
+        <body></body>
+      </html>
+    `);
+    iframeDoc.close();
+
+    iframeDoc.body.appendChild(clonedElement);
+
+    try {
+      const jspdfModule = await import("jspdf");
+      const html2canvasModule = await import("html2canvas");
+      const html2canvas =
+        (html2canvasModule && html2canvasModule.default) || html2canvasModule;
+      const jsPDF: any =
+        (jspdfModule as any)?.jsPDF ||
+        (jspdfModule as any)?.default?.jsPDF ||
+        (jspdfModule as any)?.default ||
+        jspdfModule;
+
+      // Render single-page PDF
+      const canvas = await html2canvas(iframeDoc.body, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        windowWidth: 794,
+        windowHeight: 1123,
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      pdf.addImage(imgData, "PNG", 0, 0, 210, 297);
+      pdf.save(`${resumeData.personal.name.replace(/\s+/g, "_")}_Resume.pdf`);
+    } catch (err) {
+      console.error("Error generating PDF:", err);
+      alert("Error generating PDF. Please try again.");
+    } finally {
+      if (iframe && iframe.parentNode) iframe.parentNode.removeChild(iframe);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      {/* Header */}
+      {/* Toolbar */}
       <div className="border-b border-slate-800 bg-slate-950/80 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 text-gray-300 hover:text-cyan-400 transition-colors">
-            {/* ArrowLeft icon and text */}
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-gray-300 hover:text-cyan-400 transition-colors"
+          >
             Back to Home
           </Link>
           <h1 className="text-2xl font-bold text-white">Resume Builder</h1>
           <div className="flex items-center gap-2">
-            <Button onClick={downloadResume} variant="outline" size="sm" className="gap-2 bg-transparent">
-              {/* Download icon */}
+            <Button
+              onClick={downloadResume}
+              variant="outline"
+              size="sm"
+              className="gap-2 bg-transparent"
+            >
               Download PDF
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setShowPreview(!showPreview)} className="gap-2">
-              {/* EyeOff or Eye icon */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowPreview(!showPreview)}
+              className="gap-2"
+            >
               {showPreview ? "Hide" : "Show"} Preview
             </Button>
           </div>
@@ -153,15 +228,15 @@ export default function ResumeBuilder() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="grid lg:grid-cols-2 gap-8">
-          {/* Editor Panel */}
           <div className="order-2 lg:order-1">
-            <ResumeEditor resumeData={resumeData} setResumeData={setResumeData} />
+            <ResumeEditor
+              resumeData={resumeData}
+              setResumeData={setResumeData}
+            />
           </div>
 
-          {/* Preview Panel */}
           {showPreview && (
             <div className="order-1 lg:order-2 sticky top-20 h-fit">
-              {/* Removed Card component and use simple div with inline styles */}
               <div
                 style={{
                   backgroundColor: "#ffffff",
@@ -170,7 +245,7 @@ export default function ResumeBuilder() {
                   boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
                 }}
               >
-                <div id="resume-preview">
+                <div id="resume-preview" className="content-wrapper">
                   <ResumePreview data={resumeData} />
                 </div>
               </div>
@@ -179,5 +254,5 @@ export default function ResumeBuilder() {
         </div>
       </div>
     </div>
-  )
+  );
 }
