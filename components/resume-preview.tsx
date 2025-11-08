@@ -1,17 +1,24 @@
-"use client"
+"use client";
 
-import { Mail, Phone, MapPin, Globe, Linkedin, Github } from "lucide-react"
-import { useRef } from "react"
-import html2canvas from "html2canvas"
-import jsPDF from "jspdf"
-import { Button } from "@/components/ui/button"
+import { Mail, Phone, MapPin, Globe, Linkedin, Github } from "lucide-react";
+import { useRef } from "react";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+import { Button } from "@/components/ui/button";
 
 export default function ResumePreview({ data }: any) {
   return (
-    <div style={{ padding: "32px", color: "#000", fontFamily: "serif" }} className="font-serif">
+    <div
+      style={{ padding: "32px", color: "#000", fontFamily: "serif" }}
+      className="font-serif"
+    >
       {/* Header */}
       <div style={{ textAlign: "center", marginBottom: "16px" }}>
-        <h1 style={{ fontSize: "30px", fontWeight: "bold", marginBottom: "8px" }}>{data.personal.name}</h1>
+        <h1
+          style={{ fontSize: "30px", fontWeight: "bold", marginBottom: "8px" }}
+        >
+          {data.personal.name}
+        </h1>
         <div
           style={{
             display: "flex",
@@ -71,7 +78,15 @@ export default function ResumePreview({ data }: any) {
       {/* Summary */}
       {data.summary && (
         <div style={{ marginBottom: "16px" }}>
-          <h2 style={{ fontSize: "14px", fontWeight: "bold", marginBottom: "4px" }}>SUMMARY</h2>
+          <h2
+            style={{
+              fontSize: "14px",
+              fontWeight: "bold",
+              marginBottom: "4px",
+            }}
+          >
+            SUMMARY
+          </h2>
           <p style={{ fontSize: "12px", lineHeight: "1.6" }}>{data.summary}</p>
         </div>
       )}
@@ -79,11 +94,24 @@ export default function ResumePreview({ data }: any) {
       {/* Skills */}
       {Object.keys(data.skills).length > 0 && (
         <div style={{ marginBottom: "16px" }}>
-          <h2 style={{ fontSize: "14px", fontWeight: "bold", marginBottom: "4px" }}>SKILLS</h2>
-          <div style={{ space: "4px" }}>
+          <h2
+            style={{
+              fontSize: "14px",
+              fontWeight: "bold",
+              marginBottom: "4px",
+            }}
+          >
+            SKILLS
+          </h2>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             {Object.entries(data.skills).map(([category, items]: any) => (
-              <div key={category} style={{ fontSize: "12px", marginBottom: "4px" }}>
-                <span style={{ fontWeight: "bold", textTransform: "capitalize" }}>
+              <div
+                key={category}
+                style={{ fontSize: "12px", marginBottom: "4px" }}
+              >
+                <span
+                  style={{ fontWeight: "bold", textTransform: "capitalize" }}
+                >
                   {category.replace(/([A-Z])/g, " $1")}:
                 </span>{" "}
                 {items.join(", ")}
@@ -96,25 +124,48 @@ export default function ResumePreview({ data }: any) {
       {/* Experience */}
       {data.experience && data.experience.length > 0 && (
         <div style={{ marginBottom: "16px" }}>
-          <h2 style={{ fontSize: "14px", fontWeight: "bold", marginBottom: "8px" }}>EXPERIENCE</h2>
+          <h2
+            style={{
+              fontSize: "14px",
+              fontWeight: "bold",
+              marginBottom: "8px",
+            }}
+          >
+            EXPERIENCE
+          </h2>
           <div style={{ space: "12px" }}>
             {data.experience.map((exp: any, idx: number) => (
               <div key={idx} style={{ fontSize: "12px", marginBottom: "12px" }}>
                 <div
-                  style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", marginBottom: "4px" }}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontWeight: "bold",
+                    marginBottom: "4px",
+                  }}
                 >
                   <span>{exp.position}</span>
                   <span>
                     {exp.startDate} – {exp.endDate}
                   </span>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", color: "#666", marginBottom: "4px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    color: "#666",
+                    marginBottom: "4px",
+                  }}
+                >
                   <span>{exp.company}</span>
                   <span>{exp.location}</span>
                 </div>
                 <ul style={{ marginLeft: "16px", space: "2px" }}>
                   {exp.bullets.map((bullet: string, bidx: number) => (
-                    <li key={bidx} style={{ listStyleType: "disc", marginBottom: "2px" }}>
+                    <li
+                      key={bidx}
+                      style={{ listStyleType: "disc", marginBottom: "2px" }}
+                    >
                       {bullet}
                     </li>
                   ))}
@@ -128,17 +179,34 @@ export default function ResumePreview({ data }: any) {
       {/* Projects */}
       {data.projects && data.projects.length > 0 && (
         <div style={{ marginBottom: "16px" }}>
-          <h2 style={{ fontSize: "14px", fontWeight: "bold", marginBottom: "8px" }}>PROJECTS</h2>
+          <h2
+            style={{
+              fontSize: "14px",
+              fontWeight: "bold",
+              marginBottom: "8px",
+            }}
+          >
+            PROJECTS
+          </h2>
           <div style={{ space: "12px" }}>
             {data.projects.map((proj: any, idx: number) => (
               <div key={idx} style={{ fontSize: "12px", marginBottom: "12px" }}>
                 <div
-                  style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", marginBottom: "4px" }}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontWeight: "bold",
+                    marginBottom: "4px",
+                  }}
                 >
                   <span>{proj.title}</span>
-                  <span style={{ color: "#666" }}>{proj.technologies.join(", ")}</span>
+                  <span style={{ color: "#666" }}>
+                    {proj.technologies.join(", ")}
+                  </span>
                 </div>
-                <p style={{ color: "#666", marginBottom: "4px" }}>{proj.description}</p>
+                <p style={{ color: "#666", marginBottom: "4px" }}>
+                  {proj.description}
+                </p>
                 {proj.link && <p style={{ color: "#0066cc" }}>{proj.link}</p>}
               </div>
             ))}
@@ -149,12 +217,25 @@ export default function ResumePreview({ data }: any) {
       {/* Education */}
       {data.education && data.education.length > 0 && (
         <div>
-          <h2 style={{ fontSize: "14px", fontWeight: "bold", marginBottom: "8px" }}>EDUCATION</h2>
+          <h2
+            style={{
+              fontSize: "14px",
+              fontWeight: "bold",
+              marginBottom: "8px",
+            }}
+          >
+            EDUCATION
+          </h2>
           <div style={{ space: "8px" }}>
             {data.education.map((edu: any, idx: number) => (
               <div key={idx} style={{ fontSize: "12px", marginBottom: "8px" }}>
                 <div
-                  style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", marginBottom: "4px" }}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontWeight: "bold",
+                    marginBottom: "4px",
+                  }}
                 >
                   <span>{edu.school}</span>
                   <span>{edu.graduationDate}</span>
@@ -167,5 +248,5 @@ export default function ResumePreview({ data }: any) {
         </div>
       )}
     </div>
-  )
+  );
 }
