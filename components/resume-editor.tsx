@@ -1,4 +1,5 @@
 "use client";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,8 +13,8 @@ import {
   Bold,
   Italic,
   Underline,
-  List,
-  ListOrdered,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react";
 import {
   Select,
@@ -25,7 +26,23 @@ import {
 import { useState } from "react";
 
 export default function ResumeEditor({ resumeData, setResumeData }: any) {
-  const [customFields, setCustomFields] = useState<any[]>([]);
+  const [sectionOrder, setSectionOrder] = useState([
+    "personal",
+    "summary",
+    "skills",
+    "experience",
+    "projects",
+    "education",
+  ]);
+
+  // Helper for formatting
+  const applyFormatting = (
+    text: string,
+    type: "bold" | "italic" | "underline"
+  ) => {
+    const wrapper = { bold: "**", italic: "*", underline: "__" }[type];
+    return `${wrapper}${text}${wrapper}`;
+  };
 
   const updatePersonal = (field: string, value: string) => {
     setResumeData({
@@ -35,9 +52,7 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
   };
 
   const addCustomPersonalField = () => {
-    const fieldName = prompt(
-      "Enter field name (e.g., Portfolio, Twitter, etc.):"
-    );
+    const fieldName = prompt("Enter field name (e.g., Portfolio, Twitter):");
     if (fieldName) {
       setResumeData({
         ...resumeData,
@@ -224,52 +239,68 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
     });
   };
 
-  const applyTextFormatting = (
-    expId: number,
-    bulletIdx: number,
-    format: string
-  ) => {
-    const exp = resumeData.experience.find((e: any) => e.id === expId);
-    if (!exp) return;
-
-    const bullet = exp.bullets[bulletIdx];
-    let formattedText = bullet;
-
-    // Simple formatting - wrap selected text or entire bullet
-    switch (format) {
-      case "bold":
-        formattedText = `**${bullet}**`;
-        break;
-      case "italic":
-        formattedText = `*${bullet}*`;
-        break;
-      case "underline":
-        formattedText = `__${bullet}__`;
-        break;
-    }
-
-    updateBullet(expId, bulletIdx, formattedText);
+  const moveSection = (index: number, direction: "up" | "down") => {
+    const newOrder = [...sectionOrder];
+    const newIndex = direction === "up" ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= newOrder.length) return;
+    [newOrder[index], newOrder[newIndex]] = [
+      newOrder[newIndex],
+      newOrder[index],
+    ];
+    setSectionOrder(newOrder);
   };
 
   return (
     <div className="space-y-6">
       <Tabs defaultValue="personal" className="w-full">
-        <TabsList className="grid w-full grid-cols-6 bg-slate-800 text-white">
+        <TabsList className="grid w-full grid-cols-7 bg-slate-800 text-white">
           <TabsTrigger value="personal">Personal</TabsTrigger>
           <TabsTrigger value="summary">Summary</TabsTrigger>
           <TabsTrigger value="skills">Skills</TabsTrigger>
           <TabsTrigger value="experience">Experience</TabsTrigger>
           <TabsTrigger value="projects">Projects</TabsTrigger>
           <TabsTrigger value="education">Education</TabsTrigger>
+          <TabsTrigger value="order">Order</TabsTrigger>
         </TabsList>
 
-        {/* Personal */}
+        {/* === Customize Order === */}
+        <TabsContent value="order" className="mt-4">
+          <Card className="bg-slate-800/50 border-slate-700 p-6">
+            <h3 className="text-lg font-bold text-white mb-4">
+              Section Display Order
+            </h3>
+            {sectionOrder.map((section, idx) => (
+              <div
+                key={section}
+                className="flex justify-between items-center bg-slate-700/50 p-3 rounded-md mb-2"
+              >
+                <span className="capitalize text-gray-200">{section}</span>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => moveSection(idx, "up")}
+                    className="bg-gray-600 hover:bg-gray-500"
+                  >
+                    <ArrowUp className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => moveSection(idx, "down")}
+                    className="bg-gray-600 hover:bg-gray-500"
+                  >
+                    <ArrowDown className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </Card>
+        </TabsContent>
+
+        {/* === Personal === */}
         <TabsContent value="personal" className="space-y-4 mt-4">
           <Card className="bg-slate-800/50 border-slate-700 p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-white">
-                Personal Information
-              </h3>
+            <div className="flex justify-between mb-4">
+              <h3 className="text-lg font-bold text-white">Personal Info</h3>
               <Button
                 onClick={addCustomPersonalField}
                 size="sm"
@@ -278,65 +309,84 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                 <Plus className="w-4 h-4" /> Add Field
               </Button>
             </div>
-            <div className="space-y-4">
-              {Object.entries(resumeData.personal).map(([key, value]: any) => (
-                <div key={key} className="flex gap-2 items-start">
-                  <div className="flex-1">
-                    <div className="flex justify-between items-center">
-                      <label className="text-sm font-semibold text-gray-300 capitalize">
-                        {key.replace(/([A-Z])/g, " $1")}
-                      </label>
-                      {!["name", "email", "phone"].includes(key) && (
-                        <Button
-                          onClick={() => deletePersonalField(key)}
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 text-red-400 hover:text-red-300 hover:bg-red-900/20"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                    <Input
-                      value={value}
-                      onChange={(e) => updatePersonal(key, e.target.value)}
-                      className="bg-slate-700 border-slate-600 text-white mt-1"
-                    />
-                  </div>
+            {Object.entries(resumeData.personal).map(([key, value]: any) => (
+              <div key={key} className="mb-3">
+                <label className="text-sm font-semibold text-gray-300 capitalize">
+                  {key.replace(/([A-Z])/g, " $1")}
+                </label>
+                <div className="flex gap-2 items-center mt-1">
+                  <Input
+                    value={value}
+                    onChange={(e) => updatePersonal(key, e.target.value)}
+                    className="bg-slate-700 border-slate-600 text-white"
+                  />
+                  {!["name", "email", "phone"].includes(key) && (
+                    <Button
+                      onClick={() => deletePersonalField(key)}
+                      size="icon"
+                      variant="ghost"
+                      className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </Card>
         </TabsContent>
 
-        {/* Summary */}
+        {/* === Summary === */}
         <TabsContent value="summary" className="mt-4">
           <Card className="bg-slate-800/50 border-slate-700 p-6">
-            <div className="flex justify-between items-center mb-2">
+            <div className="flex justify-between mb-2">
               <label className="text-sm font-semibold text-gray-300">
                 Professional Summary
               </label>
-              <div className="text-xs text-gray-400">
-                {resumeData.summary?.length || 0} characters
+              <div className="flex gap-1">
+                <Button
+                  size="icon"
+                  onClick={() =>
+                    updateSummary(applyFormatting(resumeData.summary, "bold"))
+                  }
+                  className="bg-slate-700 hover:bg-slate-600 text-white"
+                >
+                  <Bold className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  onClick={() =>
+                    updateSummary(applyFormatting(resumeData.summary, "italic"))
+                  }
+                  className="bg-slate-700 hover:bg-slate-600 text-white"
+                >
+                  <Italic className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  onClick={() =>
+                    updateSummary(
+                      applyFormatting(resumeData.summary, "underline")
+                    )
+                  }
+                  className="bg-slate-700 hover:bg-slate-600 text-white"
+                >
+                  <Underline className="w-4 h-4" />
+                </Button>
               </div>
             </div>
             <Textarea
               value={resumeData.summary}
               onChange={(e) => updateSummary(e.target.value)}
               className="bg-slate-700 border-slate-600 text-white mt-2 min-h-32"
-              placeholder="Describe your professional background and expertise..."
             />
-            <div className="mt-2 text-xs text-gray-400">
-              Tip: Keep it concise (2-3 sentences) and highlight your key
-              strengths
-            </div>
           </Card>
         </TabsContent>
 
-        {/* Skills */}
+        {/* === Skills === */}
         <TabsContent value="skills" className="space-y-4 mt-4">
           <Card className="bg-slate-800/50 border-slate-700 p-6">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between mb-4">
               <h3 className="text-lg font-bold text-white">Skills</h3>
               <Button
                 onClick={addSkillCategory}
@@ -346,37 +396,35 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                 <Plus className="w-4 h-4" /> Add Category
               </Button>
             </div>
-            <div className="space-y-4">
-              {Object.entries(resumeData.skills).map(
-                ([category, skills]: any) => (
-                  <div key={category}>
-                    <div className="flex justify-between items-center">
-                      <label className="text-sm font-semibold text-gray-300 capitalize">
-                        {category.replace(/([A-Z])/g, " $1")}
-                      </label>
-                      <Button
-                        onClick={() => deleteSkillCategory(category)}
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 text-red-400 hover:text-red-300 hover:bg-red-900/20"
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    <Input
-                      value={skills.join(", ")}
-                      onChange={(e) => updateSkills(category, e.target.value)}
-                      className="bg-slate-700 border-slate-600 text-white mt-1"
-                      placeholder="Separate skills with commas"
-                    />
+            {Object.entries(resumeData.skills).map(
+              ([category, skills]: any) => (
+                <div key={category} className="mb-3">
+                  <div className="flex justify-between items-center">
+                    <label className="text-sm font-semibold text-gray-300 capitalize">
+                      {category}
+                    </label>
+                    <Button
+                      onClick={() => deleteSkillCategory(category)}
+                      size="icon"
+                      variant="ghost"
+                      className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
                   </div>
-                )
-              )}
-            </div>
+                  <Input
+                    value={skills.join(", ")}
+                    onChange={(e) => updateSkills(category, e.target.value)}
+                    className="bg-slate-700 border-slate-600 text-white mt-1"
+                    placeholder="Separate with commas"
+                  />
+                </div>
+              )
+            )}
           </Card>
         </TabsContent>
 
-        {/* Experience */}
+        {/* === Experience === */}
         <TabsContent value="experience" className="space-y-4 mt-4">
           {resumeData.experience.map((exp: any, idx: number) => (
             <Card key={exp.id} className="bg-slate-800/50 border-slate-700 p-6">
@@ -387,114 +435,120 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                 </div>
                 <Button
                   onClick={() => deleteExperience(exp.id)}
-                  size="sm"
+                  size="icon"
                   variant="ghost"
                   className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
-              <div className="space-y-3">
-                <Input
-                  placeholder="Job Title"
-                  value={exp.position}
-                  onChange={(e) =>
-                    updateExperience(exp.id, "position", e.target.value)
-                  }
-                  className="bg-slate-700 border-slate-600 text-white"
-                />
-                <Input
-                  placeholder="Company"
-                  value={exp.company}
-                  onChange={(e) =>
-                    updateExperience(exp.id, "company", e.target.value)
-                  }
-                  className="bg-slate-700 border-slate-600 text-white"
-                />
-                <Input
-                  placeholder="Location"
-                  value={exp.location}
-                  onChange={(e) =>
-                    updateExperience(exp.id, "location", e.target.value)
-                  }
-                  className="bg-slate-700 border-slate-600 text-white"
-                />
-                <div className="grid grid-cols-2 gap-3">
-                  <Input
-                    placeholder="Start Date (e.g., Jan 2024)"
-                    value={exp.startDate}
-                    onChange={(e) =>
-                      updateExperience(exp.id, "startDate", e.target.value)
-                    }
-                    className="bg-slate-700 border-slate-600 text-white"
-                  />
-                  <Input
-                    placeholder="End Date or 'Present'"
-                    value={exp.endDate}
-                    onChange={(e) =>
-                      updateExperience(exp.id, "endDate", e.target.value)
-                    }
-                    className="bg-slate-700 border-slate-600 text-white"
-                  />
-                </div>
 
-                {/* Bullet Style Selector */}
-                <div className="flex items-center gap-2">
-                  <label className="text-sm text-gray-300">Bullet Style:</label>
-                  <Select
-                    value={exp.bulletStyle || "disc"}
-                    onValueChange={(value) =>
-                      updateExperience(exp.id, "bulletStyle", value)
-                    }
-                  >
-                    <SelectTrigger className="w-32 bg-slate-700 border-slate-600 text-white">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-slate-700 border-slate-600">
-                      <SelectItem value="disc">• Bullet</SelectItem>
-                      <SelectItem value="circle">○ Circle</SelectItem>
-                      <SelectItem value="square">▪ Square</SelectItem>
-                      <SelectItem value="decimal">1. Number</SelectItem>
-                      <SelectItem value="dash">- Dash</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <Input
+                placeholder="Job Title"
+                value={exp.position}
+                onChange={(e) =>
+                  updateExperience(exp.id, "position", e.target.value)
+                }
+                className="bg-slate-700 border-slate-600 text-white mb-2"
+              />
 
-                {/* Bullets */}
-                <div className="space-y-2 mt-4">
-                  <label className="text-sm font-semibold text-gray-300">
-                    Achievements & Responsibilities
-                  </label>
-                  {exp.bullets.map((bullet: string, bulletIdx: number) => (
-                    <div key={bulletIdx} className="flex gap-2 items-start">
-                      <Textarea
-                        placeholder="Describe your achievement or responsibility..."
-                        value={bullet}
-                        onChange={(e) =>
-                          updateBullet(exp.id, bulletIdx, e.target.value)
+              <Input
+                placeholder="Company"
+                value={exp.company}
+                onChange={(e) =>
+                  updateExperience(exp.id, "company", e.target.value)
+                }
+                className="bg-slate-700 border-slate-600 text-white mb-2"
+              />
+
+              <Input
+                placeholder="Location"
+                value={exp.location}
+                onChange={(e) =>
+                  updateExperience(exp.id, "location", e.target.value)
+                }
+                className="bg-slate-700 border-slate-600 text-white mb-2"
+              />
+
+              <div className="grid grid-cols-2 gap-3">
+                <Input
+                  placeholder="Start Date"
+                  value={exp.startDate}
+                  onChange={(e) =>
+                    updateExperience(exp.id, "startDate", e.target.value)
+                  }
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
+                <Input
+                  placeholder="End Date or 'Present'"
+                  value={exp.endDate}
+                  onChange={(e) =>
+                    updateExperience(exp.id, "endDate", e.target.value)
+                  }
+                  className="bg-slate-700 border-slate-600 text-white"
+                />
+              </div>
+
+              <div className="mt-4">
+                {exp.bullets.map((bullet: string, bIdx: number) => (
+                  <div key={bIdx} className="mb-2">
+                    <div className="flex gap-1 mb-1">
+                      <Button
+                        size="icon"
+                        onClick={() =>
+                          updateBullet(
+                            exp.id,
+                            bIdx,
+                            applyFormatting(bullet, "bold")
+                          )
                         }
-                        className="bg-slate-700 border-slate-600 text-white min-h-20"
-                      />
-                      <div className="flex flex-col gap-1">
-                        <Button
-                          onClick={() => deleteBullet(exp.id, bulletIdx)}
-                          size="sm"
-                          variant="ghost"
-                          className="h-8 text-red-400 hover:text-red-300 hover:bg-red-900/20"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
+                        className="bg-slate-700 hover:bg-slate-600 text-white"
+                      >
+                        <Bold className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        onClick={() =>
+                          updateBullet(
+                            exp.id,
+                            bIdx,
+                            applyFormatting(bullet, "italic")
+                          )
+                        }
+                        className="bg-slate-700 hover:bg-slate-600 text-white"
+                      >
+                        <Italic className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        onClick={() =>
+                          updateBullet(
+                            exp.id,
+                            bIdx,
+                            applyFormatting(bullet, "underline")
+                          )
+                        }
+                        className="bg-slate-700 hover:bg-slate-600 text-white"
+                      >
+                        <Underline className="w-4 h-4" />
+                      </Button>
                     </div>
-                  ))}
-                  <Button
-                    onClick={() => addBullet(exp.id)}
-                    size="sm"
-                    className="w-full bg-slate-700 hover:bg-slate-600 gap-2"
-                  >
-                    <Plus className="w-4 h-4" /> Add Bullet Point
-                  </Button>
-                </div>
+                    <Textarea
+                      value={bullet}
+                      onChange={(e) =>
+                        updateBullet(exp.id, bIdx, e.target.value)
+                      }
+                      className="bg-slate-700 border-slate-600 text-white"
+                    />
+                  </div>
+                ))}
+                <Button
+                  onClick={() => addBullet(exp.id)}
+                  size="sm"
+                  className="bg-blue-600 hover:bg-blue-700 mt-2 w-full"
+                >
+                  <Plus className="w-4 h-4" /> Add Bullet
+                </Button>
               </div>
             </Card>
           ))}
@@ -506,65 +560,62 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
           </Button>
         </TabsContent>
 
-        {/* Projects */}
+        {/* === Projects === */}
         <TabsContent value="projects" className="space-y-4 mt-4">
           {resumeData.projects.map((proj: any, idx: number) => (
             <Card
               key={proj.id}
               className="bg-slate-800/50 border-slate-700 p-6"
             >
-              <div className="flex justify-between items-center mb-4">
-                <div className="flex items-center gap-2">
-                  <GripVertical className="w-5 h-5 text-gray-500" />
-                  <h3 className="font-bold text-white">Project {idx + 1}</h3>
-                </div>
+              <div className="flex justify-between mb-4">
+                <h3 className="text-white font-bold">Project {idx + 1}</h3>
                 <Button
                   onClick={() => deleteProject(proj.id)}
-                  size="sm"
+                  size="icon"
                   variant="ghost"
                   className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
-              <div className="space-y-3">
-                <Input
-                  placeholder="Project Title"
-                  value={proj.title}
-                  onChange={(e) =>
-                    updateProject(proj.id, "title", e.target.value)
-                  }
-                  className="bg-slate-700 border-slate-600 text-white"
-                />
-                <Input
-                  placeholder="Technologies (comma separated)"
-                  value={proj.technologies.join(", ")}
-                  onChange={(e) =>
-                    updateProject(
-                      proj.id,
-                      "technologies",
-                      e.target.value.split(",").map((t) => t.trim())
-                    )
-                  }
-                  className="bg-slate-700 border-slate-600 text-white"
-                />
-                <Textarea
-                  placeholder="Brief description of what you built and its impact..."
-                  value={proj.description}
-                  onChange={(e) =>
-                    updateProject(proj.id, "description", e.target.value)
-                  }
-                  className="bg-slate-700 border-slate-600 text-white min-h-24"
-                />
-                <Input
-                  placeholder="Project Link (optional)"
-                  value={proj.link}
-                  onChange={(e) =>
-                    updateProject(proj.id, "link", e.target.value)
-                  }
-                  className="bg-slate-700 border-slate-600 text-white"
-                />
-              </div>
+
+              <Input
+                placeholder="Project Title"
+                value={proj.title}
+                onChange={(e) =>
+                  updateProject(proj.id, "title", e.target.value)
+                }
+                className="bg-slate-700 border-slate-600 text-white mb-2"
+              />
+
+              <Textarea
+                placeholder="Description"
+                value={proj.description}
+                onChange={(e) =>
+                  updateProject(proj.id, "description", e.target.value)
+                }
+                className="bg-slate-700 border-slate-600 text-white mb-2"
+              />
+
+              <Input
+                placeholder="Technologies (comma separated)"
+                value={proj.technologies.join(", ")}
+                onChange={(e) =>
+                  updateProject(
+                    proj.id,
+                    "technologies",
+                    e.target.value.split(",").map((t) => t.trim())
+                  )
+                }
+                className="bg-slate-700 border-slate-600 text-white mb-2"
+              />
+
+              <Input
+                placeholder="Project Link"
+                value={proj.link}
+                onChange={(e) => updateProject(proj.id, "link", e.target.value)}
+                className="bg-slate-700 border-slate-600 text-white mb-2"
+              />
             </Card>
           ))}
           <Button
@@ -575,67 +626,66 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
           </Button>
         </TabsContent>
 
-        {/* Education */}
+        {/* === Education === */}
         <TabsContent value="education" className="space-y-4 mt-4">
-          {resumeData.education?.map((edu: any, idx: number) => (
+          {resumeData.education.map((edu: any, idx: number) => (
             <Card key={edu.id} className="bg-slate-800/50 border-slate-700 p-6">
-              <div className="flex justify-between items-center mb-4">
-                <div className="flex items-center gap-2">
-                  <GripVertical className="w-5 h-5 text-gray-500" />
-                  <h3 className="font-bold text-white">Education {idx + 1}</h3>
-                </div>
+              <div className="flex justify-between mb-4">
+                <h3 className="text-white font-bold">Education {idx + 1}</h3>
                 <Button
                   onClick={() => deleteEducation(edu.id)}
-                  size="sm"
+                  size="icon"
                   variant="ghost"
                   className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
-              <div className="space-y-3">
+
+              <Input
+                placeholder="School"
+                value={edu.school}
+                onChange={(e) =>
+                  updateEducation(edu.id, "school", e.target.value)
+                }
+                className="bg-slate-700 border-slate-600 text-white mb-2"
+              />
+
+              <Input
+                placeholder="Degree"
+                value={edu.degree}
+                onChange={(e) =>
+                  updateEducation(edu.id, "degree", e.target.value)
+                }
+                className="bg-slate-700 border-slate-600 text-white mb-2"
+              />
+
+              <Input
+                placeholder="Location"
+                value={edu.location}
+                onChange={(e) =>
+                  updateEducation(edu.id, "location", e.target.value)
+                }
+                className="bg-slate-700 border-slate-600 text-white mb-2"
+              />
+
+              <div className="grid grid-cols-2 gap-3">
                 <Input
-                  placeholder="University/School Name"
-                  value={edu.school}
+                  placeholder="Graduation Date"
+                  value={edu.graduationDate}
                   onChange={(e) =>
-                    updateEducation(edu.id, "school", e.target.value)
+                    updateEducation(edu.id, "graduationDate", e.target.value)
                   }
                   className="bg-slate-700 border-slate-600 text-white"
                 />
                 <Input
-                  placeholder="Degree (e.g., Bachelor of Science in Computer Science)"
-                  value={edu.degree}
+                  placeholder="GPA"
+                  value={edu.gpa}
                   onChange={(e) =>
-                    updateEducation(edu.id, "degree", e.target.value)
+                    updateEducation(edu.id, "gpa", e.target.value)
                   }
                   className="bg-slate-700 border-slate-600 text-white"
                 />
-                <Input
-                  placeholder="Location (optional)"
-                  value={edu.location || ""}
-                  onChange={(e) =>
-                    updateEducation(edu.id, "location", e.target.value)
-                  }
-                  className="bg-slate-700 border-slate-600 text-white"
-                />
-                <div className="grid grid-cols-2 gap-3">
-                  <Input
-                    placeholder="Graduation Date"
-                    value={edu.graduationDate}
-                    onChange={(e) =>
-                      updateEducation(edu.id, "graduationDate", e.target.value)
-                    }
-                    className="bg-slate-700 border-slate-600 text-white"
-                  />
-                  <Input
-                    placeholder="GPA (optional)"
-                    value={edu.gpa || ""}
-                    onChange={(e) =>
-                      updateEducation(edu.id, "gpa", e.target.value)
-                    }
-                    className="bg-slate-700 border-slate-600 text-white"
-                  />
-                </div>
               </div>
             </Card>
           ))}
