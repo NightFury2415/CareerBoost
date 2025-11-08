@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,12 +10,15 @@ import {
   Plus,
   X,
   Trash2,
-  GripVertical,
   Bold,
   Italic,
   Underline,
   ArrowUp,
   ArrowDown,
+  Settings2,
+  GripVertical,
+  Briefcase,
+  GraduationCap,
 } from "lucide-react";
 import {
   Select,
@@ -23,7 +27,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useState } from "react";
 
 export default function ResumeEditor({ resumeData, setResumeData }: any) {
   const [sectionOrder, setSectionOrder] = useState([
@@ -35,7 +38,7 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
     "education",
   ]);
 
-  // Helper for formatting
+  // ===== Formatting =====
   const applyFormatting = (
     text: string,
     type: "bold" | "italic" | "underline"
@@ -44,6 +47,30 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
     return `${wrapper}${text}${wrapper}`;
   };
 
+  // ===== Section Order / Management =====
+  const moveSection = (index: number, direction: "up" | "down") => {
+    const newOrder = [...sectionOrder];
+    const newIndex = direction === "up" ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= newOrder.length) return;
+    [newOrder[index], newOrder[newIndex]] = [
+      newOrder[newIndex],
+      newOrder[index],
+    ];
+    setSectionOrder(newOrder);
+  };
+
+  const deleteSection = (section: string) => {
+    setSectionOrder(sectionOrder.filter((s) => s !== section));
+  };
+
+  const addSection = () => {
+    const sectionName = prompt("Enter new section name:");
+    if (sectionName && !sectionOrder.includes(sectionName.toLowerCase())) {
+      setSectionOrder([...sectionOrder, sectionName.toLowerCase()]);
+    }
+  };
+
+  // ===== Personal =====
   const updatePersonal = (field: string, value: string) => {
     setResumeData({
       ...resumeData,
@@ -66,10 +93,12 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
     setResumeData({ ...resumeData, personal: rest });
   };
 
+  // ===== Summary =====
   const updateSummary = (value: string) => {
     setResumeData({ ...resumeData, summary: value });
   };
 
+  // ===== Skills =====
   const addSkillCategory = () => {
     const categoryName = prompt("Enter skill category name:");
     if (categoryName) {
@@ -95,6 +124,7 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
     });
   };
 
+  // ===== Experience =====
   const addExperience = () => {
     setResumeData({
       ...resumeData,
@@ -108,7 +138,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
           startDate: "",
           endDate: "",
           bullets: [""],
-          bulletStyle: "disc",
         },
       ],
     });
@@ -153,12 +182,7 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
       ...resumeData,
       experience: resumeData.experience.map((exp: any) =>
         exp.id === expId
-          ? {
-              ...exp,
-              bullets: exp.bullets.filter(
-                (_: any, i: number) => i !== bulletIdx
-              ),
-            }
+          ? { ...exp, bullets: exp.bullets.filter((_, i) => i !== bulletIdx) }
           : exp
       ),
     });
@@ -171,6 +195,7 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
     });
   };
 
+  // ===== Projects =====
   const addProject = () => {
     setResumeData({
       ...resumeData,
@@ -179,8 +204,10 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
         {
           id: Date.now(),
           title: "",
+          type: "Personal",
           technologies: [],
           description: "",
+          impact: "",
           link: "",
         },
       ],
@@ -203,21 +230,22 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
     });
   };
 
+  // ===== Education =====
   const addEducation = () => {
-    if (!resumeData.education) {
-      setResumeData({ ...resumeData, education: [] });
-    }
     setResumeData({
       ...resumeData,
       education: [
-        ...(resumeData.education || []),
+        ...resumeData.education,
         {
           id: Date.now(),
           school: "",
           degree: "",
+          minor: "",
+          location: "",
           graduationDate: "",
           gpa: "",
-          location: "",
+          honors: "",
+          description: "",
         },
       ],
     });
@@ -239,36 +267,33 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
     });
   };
 
-  const moveSection = (index: number, direction: "up" | "down") => {
-    const newOrder = [...sectionOrder];
-    const newIndex = direction === "up" ? index - 1 : index + 1;
-    if (newIndex < 0 || newIndex >= newOrder.length) return;
-    [newOrder[index], newOrder[newIndex]] = [
-      newOrder[newIndex],
-      newOrder[index],
-    ];
-    setSectionOrder(newOrder);
-  };
-
+  // ===== MAIN UI =====
   return (
     <div className="space-y-6">
       <Tabs defaultValue="personal" className="w-full">
         <TabsList className="grid w-full grid-cols-7 bg-slate-800 text-white">
-          <TabsTrigger value="personal">Personal</TabsTrigger>
-          <TabsTrigger value="summary">Summary</TabsTrigger>
-          <TabsTrigger value="skills">Skills</TabsTrigger>
-          <TabsTrigger value="experience">Experience</TabsTrigger>
-          <TabsTrigger value="projects">Projects</TabsTrigger>
-          <TabsTrigger value="education">Education</TabsTrigger>
-          <TabsTrigger value="order">Order</TabsTrigger>
+          {sectionOrder.map((section) => (
+            <TabsTrigger key={section} value={section}>
+              {section.charAt(0).toUpperCase() + section.slice(1)}
+            </TabsTrigger>
+          ))}
+          <TabsTrigger value="order">
+            <Settings2 className="w-4 h-4 mr-1" /> Manage
+          </TabsTrigger>
         </TabsList>
 
-        {/* === Customize Order === */}
+        {/* Manage Section Order */}
         <TabsContent value="order" className="mt-4">
           <Card className="bg-slate-800/50 border-slate-700 p-6">
-            <h3 className="text-lg font-bold text-white mb-4">
-              Section Display Order
-            </h3>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-white">Section Manager</h3>
+              <Button
+                onClick={addSection}
+                className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+              >
+                <Plus className="w-4 h-4" /> Add Section
+              </Button>
+            </div>
             {sectionOrder.map((section, idx) => (
               <div
                 key={section}
@@ -290,13 +315,22 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                   >
                     <ArrowDown className="w-4 h-4" />
                   </Button>
+                  {section !== "personal" && section !== "summary" && (
+                    <Button
+                      size="sm"
+                      onClick={() => deleteSection(section)}
+                      className="bg-red-600 hover:bg-red-700"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
           </Card>
         </TabsContent>
 
-        {/* === Personal === */}
+        {/* PERSONAL */}
         <TabsContent value="personal" className="space-y-4 mt-4">
           <Card className="bg-slate-800/50 border-slate-700 p-6">
             <div className="flex justify-between mb-4">
@@ -336,7 +370,7 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
           </Card>
         </TabsContent>
 
-        {/* === Summary === */}
+        {/* SUMMARY */}
         <TabsContent value="summary" className="mt-4">
           <Card className="bg-slate-800/50 border-slate-700 p-6">
             <div className="flex justify-between mb-2">
@@ -383,7 +417,7 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
           </Card>
         </TabsContent>
 
-        {/* === Skills === */}
+        {/* SKILLS */}
         <TabsContent value="skills" className="space-y-4 mt-4">
           <Card className="bg-slate-800/50 border-slate-700 p-6">
             <div className="flex justify-between mb-4">
@@ -424,7 +458,7 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
           </Card>
         </TabsContent>
 
-        {/* === Experience === */}
+        {/* EXPERIENCE */}
         <TabsContent value="experience" className="space-y-4 mt-4">
           {resumeData.experience.map((exp: any, idx: number) => (
             <Card key={exp.id} className="bg-slate-800/50 border-slate-700 p-6">
@@ -451,7 +485,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                 }
                 className="bg-slate-700 border-slate-600 text-white mb-2"
               />
-
               <Input
                 placeholder="Company"
                 value={exp.company}
@@ -460,7 +493,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                 }
                 className="bg-slate-700 border-slate-600 text-white mb-2"
               />
-
               <Input
                 placeholder="Location"
                 value={exp.location}
@@ -469,8 +501,7 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                 }
                 className="bg-slate-700 border-slate-600 text-white mb-2"
               />
-
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 mb-2">
                 <Input
                   placeholder="Start Date"
                   value={exp.startDate}
@@ -489,67 +520,72 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                 />
               </div>
 
-              <div className="mt-4">
-                {exp.bullets.map((bullet: string, bIdx: number) => (
-                  <div key={bIdx} className="mb-2">
-                    <div className="flex gap-1 mb-1">
-                      <Button
-                        size="icon"
-                        onClick={() =>
-                          updateBullet(
-                            exp.id,
-                            bIdx,
-                            applyFormatting(bullet, "bold")
-                          )
-                        }
-                        className="bg-slate-700 hover:bg-slate-600 text-white"
-                      >
-                        <Bold className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        onClick={() =>
-                          updateBullet(
-                            exp.id,
-                            bIdx,
-                            applyFormatting(bullet, "italic")
-                          )
-                        }
-                        className="bg-slate-700 hover:bg-slate-600 text-white"
-                      >
-                        <Italic className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        onClick={() =>
-                          updateBullet(
-                            exp.id,
-                            bIdx,
-                            applyFormatting(bullet, "underline")
-                          )
-                        }
-                        className="bg-slate-700 hover:bg-slate-600 text-white"
-                      >
-                        <Underline className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    <Textarea
-                      value={bullet}
-                      onChange={(e) =>
-                        updateBullet(exp.id, bIdx, e.target.value)
+              {exp.bullets.map((bullet: string, bIdx: number) => (
+                <div key={bIdx} className="mb-2">
+                  <div className="flex gap-1 mb-1">
+                    <Button
+                      size="icon"
+                      onClick={() =>
+                        updateBullet(
+                          exp.id,
+                          bIdx,
+                          applyFormatting(bullet, "bold")
+                        )
                       }
-                      className="bg-slate-700 border-slate-600 text-white"
-                    />
+                      className="bg-slate-700 hover:bg-slate-600 text-white"
+                    >
+                      <Bold className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      onClick={() =>
+                        updateBullet(
+                          exp.id,
+                          bIdx,
+                          applyFormatting(bullet, "italic")
+                        )
+                      }
+                      className="bg-slate-700 hover:bg-slate-600 text-white"
+                    >
+                      <Italic className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      onClick={() =>
+                        updateBullet(
+                          exp.id,
+                          bIdx,
+                          applyFormatting(bullet, "underline")
+                        )
+                      }
+                      className="bg-slate-700 hover:bg-slate-600 text-white"
+                    >
+                      <Underline className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => deleteBullet(exp.id, bIdx)}
+                      className="text-red-400 hover:text-red-300 hover:bg-red-900/20 ml-2"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
                   </div>
-                ))}
-                <Button
-                  onClick={() => addBullet(exp.id)}
-                  size="sm"
-                  className="bg-blue-600 hover:bg-blue-700 mt-2 w-full"
-                >
-                  <Plus className="w-4 h-4" /> Add Bullet
-                </Button>
-              </div>
+                  <Textarea
+                    value={bullet}
+                    onChange={(e) => updateBullet(exp.id, bIdx, e.target.value)}
+                    className="bg-slate-700 border-slate-600 text-white"
+                    placeholder="Describe your responsibility or impact..."
+                  />
+                </div>
+              ))}
+              <Button
+                onClick={() => addBullet(exp.id)}
+                size="sm"
+                className="bg-blue-600 hover:bg-blue-700 w-full mt-2"
+              >
+                <Plus className="w-4 h-4" /> Add Bullet
+              </Button>
             </Card>
           ))}
           <Button
@@ -560,62 +596,159 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
           </Button>
         </TabsContent>
 
-        {/* === Projects === */}
+        {/* PROJECTS */}
         <TabsContent value="projects" className="space-y-4 mt-4">
           {resumeData.projects.map((proj: any, idx: number) => (
             <Card
               key={proj.id}
               className="bg-slate-800/50 border-slate-700 p-6"
             >
-              <div className="flex justify-between mb-4">
-                <h3 className="text-white font-bold">Project {idx + 1}</h3>
-                <Button
-                  onClick={() => deleteProject(proj.id)}
-                  size="icon"
-                  variant="ghost"
-                  className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-2">
+                  <Briefcase className="text-blue-400" />
+                  <h3 className="text-white font-bold">Project {idx + 1}</h3>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      const fieldName = prompt(
+                        "Enter new custom field name for this project:"
+                      );
+                      if (fieldName)
+                        updateProject(proj.id, fieldName.toLowerCase(), "");
+                    }}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <Plus className="w-4 h-4" /> Add Field
+                  </Button>
+                  <Button
+                    onClick={() => deleteProject(proj.id)}
+                    size="icon"
+                    variant="ghost"
+                    className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
 
-              <Input
-                placeholder="Project Title"
-                value={proj.title}
-                onChange={(e) =>
-                  updateProject(proj.id, "title", e.target.value)
-                }
-                className="bg-slate-700 border-slate-600 text-white mb-2"
-              />
+              {[
+                { key: "title", label: "Project Title", type: "input" },
+                { key: "type", label: "Project Type", type: "select" },
+                { key: "description", label: "Description", type: "textarea" },
+                { key: "impact", label: "Impact / Results", type: "textarea" },
+                { key: "technologies", label: "Technologies", type: "input" },
+                { key: "link", label: "Project Link", type: "input" },
+              ]
+                .filter((field) => proj.hasOwnProperty(field.key))
+                .map((field) => (
+                  <div key={field.key} className="relative mb-3">
+                    {field.type === "input" && (
+                      <Input
+                        placeholder={field.label}
+                        value={
+                          field.key === "technologies"
+                            ? proj[field.key].join(", ")
+                            : proj[field.key]
+                        }
+                        onChange={(e) =>
+                          field.key === "technologies"
+                            ? updateProject(
+                                proj.id,
+                                "technologies",
+                                e.target.value.split(",").map((t) => t.trim())
+                              )
+                            : updateProject(proj.id, field.key, e.target.value)
+                        }
+                        className="bg-slate-700 border-slate-600 text-white"
+                      />
+                    )}
+                    {field.type === "textarea" && (
+                      <Textarea
+                        placeholder={field.label}
+                        value={proj[field.key]}
+                        onChange={(e) =>
+                          updateProject(proj.id, field.key, e.target.value)
+                        }
+                        className="bg-slate-700 border-slate-600 text-white"
+                      />
+                    )}
+                    {field.type === "select" && (
+                      <Select
+                        value={proj[field.key]}
+                        onValueChange={(val) =>
+                          updateProject(proj.id, field.key, val)
+                        }
+                      >
+                        <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                          <SelectValue placeholder={field.label} />
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-800 text-white">
+                          <SelectItem value="Personal">Personal</SelectItem>
+                          <SelectItem value="Academic">Academic</SelectItem>
+                          <SelectItem value="Professional">
+                            Professional
+                          </SelectItem>
+                          <SelectItem value="Open Source">
+                            Open Source
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => {
+                        const updated = { ...proj };
+                        delete updated[field.key];
+                        updateProject(proj.id, "", updated);
+                      }}
+                      className="absolute right-1 top-1 text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
 
-              <Textarea
-                placeholder="Description"
-                value={proj.description}
-                onChange={(e) =>
-                  updateProject(proj.id, "description", e.target.value)
-                }
-                className="bg-slate-700 border-slate-600 text-white mb-2"
-              />
-
-              <Input
-                placeholder="Technologies (comma separated)"
-                value={proj.technologies.join(", ")}
-                onChange={(e) =>
-                  updateProject(
-                    proj.id,
-                    "technologies",
-                    e.target.value.split(",").map((t) => t.trim())
-                  )
-                }
-                className="bg-slate-700 border-slate-600 text-white mb-2"
-              />
-
-              <Input
-                placeholder="Project Link"
-                value={proj.link}
-                onChange={(e) => updateProject(proj.id, "link", e.target.value)}
-                className="bg-slate-700 border-slate-600 text-white mb-2"
-              />
+              {/* Custom Fields */}
+              {Object.entries(proj)
+                .filter(
+                  ([key]) =>
+                    ![
+                      "id",
+                      "title",
+                      "type",
+                      "description",
+                      "impact",
+                      "technologies",
+                      "link",
+                    ].includes(key)
+                )
+                .map(([key, val]) => (
+                  <div key={key} className="relative mb-2">
+                    <Input
+                      placeholder={key}
+                      value={val as string}
+                      onChange={(e) =>
+                        updateProject(proj.id, key, e.target.value)
+                      }
+                      className="bg-slate-700 border-slate-600 text-white"
+                    />
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => {
+                        const updated = { ...proj };
+                        delete updated[key];
+                        updateProject(proj.id, "", updated);
+                      }}
+                      className="absolute right-1 top-1 text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
             </Card>
           ))}
           <Button
@@ -626,67 +759,127 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
           </Button>
         </TabsContent>
 
-        {/* === Education === */}
+        {/* EDUCATION */}
         <TabsContent value="education" className="space-y-4 mt-4">
           {resumeData.education.map((edu: any, idx: number) => (
             <Card key={edu.id} className="bg-slate-800/50 border-slate-700 p-6">
-              <div className="flex justify-between mb-4">
-                <h3 className="text-white font-bold">Education {idx + 1}</h3>
-                <Button
-                  onClick={() => deleteEducation(edu.id)}
-                  size="icon"
-                  variant="ghost"
-                  className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+              <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-2">
+                  <GraduationCap className="text-blue-400" />
+                  <h3 className="text-white font-bold">Education {idx + 1}</h3>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      const newField = prompt(
+                        "Enter a new custom field name for this education:"
+                      );
+                      if (newField)
+                        updateEducation(edu.id, newField.toLowerCase(), "");
+                    }}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <Plus className="w-4 h-4" /> Add Field
+                  </Button>
+                  <Button
+                    onClick={() => deleteEducation(edu.id)}
+                    size="icon"
+                    variant="ghost"
+                    className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
 
-              <Input
-                placeholder="School"
-                value={edu.school}
-                onChange={(e) =>
-                  updateEducation(edu.id, "school", e.target.value)
-                }
-                className="bg-slate-700 border-slate-600 text-white mb-2"
-              />
+              {[
+                { key: "school", label: "University / Institution" },
+                { key: "degree", label: "Degree" },
+                { key: "minor", label: "Minor / Specialization" },
+                { key: "location", label: "Location" },
+                { key: "graduationDate", label: "Graduation Date" },
+                { key: "gpa", label: "GPA" },
+                { key: "honors", label: "Honors / Awards" },
+                { key: "description", label: "Clubs / Research / Highlights" },
+              ]
+                .filter((f) => edu.hasOwnProperty(f.key))
+                .map((field) => (
+                  <div key={field.key} className="relative mb-3">
+                    {field.key === "description" || field.key === "honors" ? (
+                      <Textarea
+                        placeholder={field.label}
+                        value={edu[field.key]}
+                        onChange={(e) =>
+                          updateEducation(edu.id, field.key, e.target.value)
+                        }
+                        className="bg-slate-700 border-slate-600 text-white"
+                      />
+                    ) : (
+                      <Input
+                        placeholder={field.label}
+                        value={edu[field.key]}
+                        onChange={(e) =>
+                          updateEducation(edu.id, field.key, e.target.value)
+                        }
+                        className="bg-slate-700 border-slate-600 text-white"
+                      />
+                    )}
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => {
+                        const updated = { ...edu };
+                        delete updated[field.key];
+                        updateEducation(edu.id, "", updated);
+                      }}
+                      className="absolute right-1 top-1 text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
 
-              <Input
-                placeholder="Degree"
-                value={edu.degree}
-                onChange={(e) =>
-                  updateEducation(edu.id, "degree", e.target.value)
-                }
-                className="bg-slate-700 border-slate-600 text-white mb-2"
-              />
-
-              <Input
-                placeholder="Location"
-                value={edu.location}
-                onChange={(e) =>
-                  updateEducation(edu.id, "location", e.target.value)
-                }
-                className="bg-slate-700 border-slate-600 text-white mb-2"
-              />
-
-              <div className="grid grid-cols-2 gap-3">
-                <Input
-                  placeholder="Graduation Date"
-                  value={edu.graduationDate}
-                  onChange={(e) =>
-                    updateEducation(edu.id, "graduationDate", e.target.value)
-                  }
-                  className="bg-slate-700 border-slate-600 text-white"
-                />
-                <Input
-                  placeholder="GPA"
-                  value={edu.gpa}
-                  onChange={(e) =>
-                    updateEducation(edu.id, "gpa", e.target.value)
-                  }
-                  className="bg-slate-700 border-slate-600 text-white"
-                />
-              </div>
+              {/* Custom Fields */}
+              {Object.entries(edu)
+                .filter(
+                  ([key]) =>
+                    ![
+                      "id",
+                      "school",
+                      "degree",
+                      "minor",
+                      "location",
+                      "graduationDate",
+                      "gpa",
+                      "honors",
+                      "description",
+                    ].includes(key)
+                )
+                .map(([key, val]) => (
+                  <div key={key} className="relative mb-2">
+                    <Input
+                      placeholder={key}
+                      value={val as string}
+                      onChange={(e) =>
+                        updateEducation(edu.id, key, e.target.value)
+                      }
+                      className="bg-slate-700 border-slate-600 text-white"
+                    />
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => {
+                        const updated = { ...edu };
+                        delete updated[key];
+                        updateEducation(edu.id, "", updated);
+                      }}
+                      className="absolute right-1 top-1 text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
             </Card>
           ))}
           <Button
