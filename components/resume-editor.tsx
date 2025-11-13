@@ -29,20 +29,41 @@ import {
 } from "@/components/ui/select";
 
 export default function ResumeEditor({ resumeData, setResumeData }: any) {
-  const [sectionOrder, setSectionOrder] = useState([
-    "personal",
-    "summary",
-    "skills",
-    "experience",
-    "projects",
-    "education",
-  ]);
+  const [sectionOrder, setSectionOrder] = useState(
+    resumeData.sectionOrder || [
+      "personal",
+      "summary",
+      "skills",
+      "experience",
+      "projects",
+      "education",
+    ]
+  );
+
+  // Update section order in resume data whenever it changes
+  const updateSectionOrder = (newOrder: string[]) => {
+    setSectionOrder(newOrder);
+    setResumeData({ ...resumeData, sectionOrder: newOrder });
+  };
 
   // ===== Formatting =====
   const applyFormatting = (
     text: string,
-    type: "bold" | "italic" | "underline"
+    type: "bold" | "italic" | "underline",
+    selectionStart?: number,
+    selectionEnd?: number
   ) => {
+    if (
+      selectionStart !== undefined &&
+      selectionEnd !== undefined &&
+      selectionStart !== selectionEnd
+    ) {
+      const before = text.substring(0, selectionStart);
+      const selected = text.substring(selectionStart, selectionEnd);
+      const after = text.substring(selectionEnd);
+      const wrapper = { bold: "**", italic: "*", underline: "__" }[type];
+      return `${before}${wrapper}${selected}${wrapper}${after}`;
+    }
     const wrapper = { bold: "**", italic: "*", underline: "__" }[type];
     return `${wrapper}${text}${wrapper}`;
   };
@@ -56,17 +77,25 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
       newOrder[newIndex],
       newOrder[index],
     ];
-    setSectionOrder(newOrder);
+    updateSectionOrder(newOrder);
   };
 
   const deleteSection = (section: string) => {
-    setSectionOrder(sectionOrder.filter((s) => s !== section));
+    updateSectionOrder(sectionOrder.filter((s) => s !== section));
   };
 
   const addSection = () => {
     const sectionName = prompt("Enter new section name:");
     if (sectionName && !sectionOrder.includes(sectionName.toLowerCase())) {
-      setSectionOrder([...sectionOrder, sectionName.toLowerCase()]);
+      updateSectionOrder([...sectionOrder, sectionName.toLowerCase()]);
+      // Initialize empty custom section data
+      if (!resumeData[sectionName.toLowerCase()]) {
+        setResumeData({
+          ...resumeData,
+          [sectionName.toLowerCase()]: "",
+          sectionOrder: [...sectionOrder, sectionName.toLowerCase()],
+        });
+      }
     }
   };
 
@@ -119,7 +148,10 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
       ...resumeData,
       skills: {
         ...resumeData.skills,
-        [category]: value.split(",").map((item) => item.trim()),
+        [category]: value
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean),
       },
     });
   };
@@ -230,6 +262,19 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
     });
   };
 
+  const deleteProjectField = (projId: number, field: string) => {
+    setResumeData({
+      ...resumeData,
+      projects: resumeData.projects.map((proj: any) => {
+        if (proj.id === projId) {
+          const { [field]: removed, ...rest } = proj;
+          return rest;
+        }
+        return proj;
+      }),
+    });
+  };
+
   // ===== Education =====
   const addEducation = () => {
     setResumeData({
@@ -267,12 +312,30 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
     });
   };
 
+  const deleteEducationField = (eduId: number, field: string) => {
+    setResumeData({
+      ...resumeData,
+      education: resumeData.education.map((edu: any) => {
+        if (edu.id === eduId) {
+          const { [field]: removed, ...rest } = edu;
+          return rest;
+        }
+        return edu;
+      }),
+    });
+  };
+
+  // ===== Custom Sections =====
+  const updateCustomSection = (section: string, value: string) => {
+    setResumeData({ ...resumeData, [section]: value });
+  };
+
   // ===== MAIN UI =====
   return (
     <div className="space-y-6">
       <Tabs defaultValue="personal" className="w-full">
         <TabsList className="grid w-full grid-cols-7 bg-slate-800 text-white">
-          {sectionOrder.map((section) => (
+          {sectionOrder.slice(0, 6).map((section) => (
             <TabsTrigger key={section} value={section}>
               {section.charAt(0).toUpperCase() + section.slice(1)}
             </TabsTrigger>
@@ -377,43 +440,16 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
               <label className="text-sm font-semibold text-gray-300">
                 Professional Summary
               </label>
-              <div className="flex gap-1">
-                <Button
-                  size="icon"
-                  onClick={() =>
-                    updateSummary(applyFormatting(resumeData.summary, "bold"))
-                  }
-                  className="bg-slate-700 hover:bg-slate-600 text-white"
-                >
-                  <Bold className="w-4 h-4" />
-                </Button>
-                <Button
-                  size="icon"
-                  onClick={() =>
-                    updateSummary(applyFormatting(resumeData.summary, "italic"))
-                  }
-                  className="bg-slate-700 hover:bg-slate-600 text-white"
-                >
-                  <Italic className="w-4 h-4" />
-                </Button>
-                <Button
-                  size="icon"
-                  onClick={() =>
-                    updateSummary(
-                      applyFormatting(resumeData.summary, "underline")
-                    )
-                  }
-                  className="bg-slate-700 hover:bg-slate-600 text-white"
-                >
-                  <Underline className="w-4 h-4" />
-                </Button>
-              </div>
             </div>
             <Textarea
               value={resumeData.summary}
               onChange={(e) => updateSummary(e.target.value)}
               className="bg-slate-700 border-slate-600 text-white mt-2 min-h-32"
             />
+            <p className="text-xs text-gray-400 mt-2">
+              Tip: Use **text** for bold, *text* for italic, __text__ for
+              underline
+            </p>
           </Card>
         </TabsContent>
 
@@ -522,51 +558,12 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
 
               {exp.bullets.map((bullet: string, bIdx: number) => (
                 <div key={bIdx} className="mb-2">
-                  <div className="flex gap-1 mb-1">
-                    <Button
-                      size="icon"
-                      onClick={() =>
-                        updateBullet(
-                          exp.id,
-                          bIdx,
-                          applyFormatting(bullet, "bold")
-                        )
-                      }
-                      className="bg-slate-700 hover:bg-slate-600 text-white"
-                    >
-                      <Bold className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      onClick={() =>
-                        updateBullet(
-                          exp.id,
-                          bIdx,
-                          applyFormatting(bullet, "italic")
-                        )
-                      }
-                      className="bg-slate-700 hover:bg-slate-600 text-white"
-                    >
-                      <Italic className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      onClick={() =>
-                        updateBullet(
-                          exp.id,
-                          bIdx,
-                          applyFormatting(bullet, "underline")
-                        )
-                      }
-                      className="bg-slate-700 hover:bg-slate-600 text-white"
-                    >
-                      <Underline className="w-4 h-4" />
-                    </Button>
+                  <div className="flex justify-between items-center mb-1">
                     <Button
                       size="icon"
                       variant="ghost"
                       onClick={() => deleteBullet(exp.id, bIdx)}
-                      className="text-red-400 hover:text-red-300 hover:bg-red-900/20 ml-2"
+                      className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
                     >
                       <X className="w-4 h-4" />
                     </Button>
@@ -575,7 +572,7 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                     value={bullet}
                     onChange={(e) => updateBullet(exp.id, bIdx, e.target.value)}
                     className="bg-slate-700 border-slate-600 text-white"
-                    placeholder="Describe your responsibility or impact..."
+                    placeholder="Describe your responsibility or impact... Use **text** for bold, *text* for italic"
                   />
                 </div>
               ))}
@@ -657,7 +654,10 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                             ? updateProject(
                                 proj.id,
                                 "technologies",
-                                e.target.value.split(",").map((t) => t.trim())
+                                e.target.value
+                                  .split(",")
+                                  .map((t) => t.trim())
+                                  .filter(Boolean)
                               )
                             : updateProject(proj.id, field.key, e.target.value)
                         }
@@ -696,18 +696,16 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                         </SelectContent>
                       </Select>
                     )}
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => {
-                        const updated = { ...proj };
-                        delete updated[field.key];
-                        updateProject(proj.id, "", updated);
-                      }}
-                      className="absolute right-1 top-1 text-red-400 hover:text-red-300 hover:bg-red-900/20"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
+                    {!["id", "title"].includes(field.key) && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => deleteProjectField(proj.id, field.key)}
+                        className="absolute right-1 top-1 text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
                 ))}
 
@@ -738,11 +736,7 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                     <Button
                       size="icon"
                       variant="ghost"
-                      onClick={() => {
-                        const updated = { ...proj };
-                        delete updated[key];
-                        updateProject(proj.id, "", updated);
-                      }}
+                      onClick={() => deleteProjectField(proj.id, key)}
                       className="absolute right-1 top-1 text-red-400 hover:text-red-300 hover:bg-red-900/20"
                     >
                       <X className="w-4 h-4" />
@@ -825,18 +819,16 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                         className="bg-slate-700 border-slate-600 text-white"
                       />
                     )}
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => {
-                        const updated = { ...edu };
-                        delete updated[field.key];
-                        updateEducation(edu.id, "", updated);
-                      }}
-                      className="absolute right-1 top-1 text-red-400 hover:text-red-300 hover:bg-red-900/20"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
+                    {!["id", "school", "degree"].includes(field.key) && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => deleteEducationField(edu.id, field.key)}
+                        className="absolute right-1 top-1 text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
                 ))}
 
@@ -869,11 +861,7 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                     <Button
                       size="icon"
                       variant="ghost"
-                      onClick={() => {
-                        const updated = { ...edu };
-                        delete updated[key];
-                        updateEducation(edu.id, "", updated);
-                      }}
+                      onClick={() => deleteEducationField(edu.id, key)}
                       className="absolute right-1 top-1 text-red-400 hover:text-red-300 hover:bg-red-900/20"
                     >
                       <X className="w-4 h-4" />
@@ -889,6 +877,35 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
             <Plus className="w-4 h-4" /> Add Education
           </Button>
         </TabsContent>
+
+        {/* Custom Sections */}
+        {sectionOrder
+          .filter(
+            (section) =>
+              ![
+                "personal",
+                "summary",
+                "skills",
+                "experience",
+                "projects",
+                "education",
+              ].includes(section)
+          )
+          .map((section) => (
+            <TabsContent key={section} value={section} className="mt-4">
+              <Card className="bg-slate-800/50 border-slate-700 p-6">
+                <h3 className="text-lg font-bold text-white mb-4 capitalize">
+                  {section}
+                </h3>
+                <Textarea
+                  value={resumeData[section] || ""}
+                  onChange={(e) => updateCustomSection(section, e.target.value)}
+                  className="bg-slate-700 border-slate-600 text-white min-h-32"
+                  placeholder={`Enter content for ${section} section...`}
+                />
+              </Card>
+            </TabsContent>
+          ))}
       </Tabs>
     </div>
   );
