@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -89,6 +89,7 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
   );
   const [activeTab, setActiveTab] = useState("personal");
   const textareaRefs = useRef<{ [key: string]: HTMLTextAreaElement }>({});
+  const tabsScrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Tab navigation
   const currentTabIndex = activeTab === "order" ? sectionOrder.length : sectionOrder.indexOf(activeTab);
@@ -113,6 +114,25 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
       }
     }
   };
+
+  // Scroll active tab into view
+  useEffect(() => {
+    if (tabsScrollContainerRef.current) {
+      // Use a small delay to ensure DOM is updated
+      setTimeout(() => {
+        const activeTabElement = tabsScrollContainerRef.current?.querySelector(
+          `[data-state="active"], [aria-selected="true"]`
+        ) as HTMLElement;
+        if (activeTabElement) {
+          activeTabElement.scrollIntoView({
+            behavior: "smooth",
+            block: "nearest",
+            inline: "center",
+          });
+        }
+      }, 50);
+    }
+  }, [activeTab]);
 
   // Update section order
   const updateSectionOrder = (newOrder: string[]) => {
@@ -166,7 +186,7 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
   };
 
   const deleteSection = (section: string) => {
-    updateSectionOrder(sectionOrder.filter((s) => s !== section));
+    updateSectionOrder(sectionOrder.filter((s: string) => s !== section));
   };
 
   const addPredefinedSection = (sectionId: string) => {
@@ -568,49 +588,56 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
   };
 
   return (
-    <div className="space-y-6">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <div className="flex items-center gap-2">
+    <div className="space-y-6 w-full max-w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-full">
+        <div className="flex items-center gap-2 w-full max-w-full">
           <Button
             size="icon"
             variant="ghost"
             onClick={() => navigateTabs("left")}
             disabled={!canNavigateLeft}
-            className="text-white hover:bg-slate-700"
+            className="text-white hover:bg-slate-700 flex-shrink-0"
           >
             <ChevronLeft className="w-5 h-5" />
           </Button>
 
-          <TabsList className="flex-1 flex bg-slate-700 text-white h-auto overflow-x-auto">
-            {sectionOrder.map((section) => (
+          <div ref={tabsScrollContainerRef} className="flex-1 min-w-0 overflow-x-auto rounded-lg shadow-lg shadow-cyan-500/20">
+            <TabsList className="flex w-max bg-slate-700 text-white h-auto p-1 rounded-lg">
+              {sectionOrder.map((section: string) => (
+                <TabsTrigger 
+                  key={section} 
+                  value={section} 
+                  className={`flex-shrink-0 capitalize py-2 px-4 whitespace-nowrap ${activeTab === section ? 'bg-slate-600' : ''}`}
+                >
+                  {section === "order" ? (
+                    <>
+                      <Settings2 className="w-4 h-4 mr-1" /> Manage
+                    </>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      {availableSections.find((s: { id: string; }) => s.id === section)?.icon && (
+                        <span>{availableSections.find((s: { id: string; }) => s.id === section)?.icon}</span>
+                      )}
+                      {section}
+                    </div>
+                  )}
+                </TabsTrigger>
+              ))}
               <TabsTrigger 
-                key={section} 
-                value={section} 
-                className={`capitalize py-2 px-4 whitespace-nowrap ${activeTab === section ? 'bg-slate-600' : ''}`}
+                value="order" 
+                className={`flex-shrink-0 py-2 px-4 whitespace-nowrap ${activeTab === "order" ? 'bg-slate-600' : ''}`}
               >
-                {section === "order" ? (
-                  <>
-                    <Settings2 className="w-4 h-4 mr-1" /> Manage
-                  </>
-                ) : (
-                  section
-                )}
+                <Settings2 className="w-4 h-4 mr-1" /> Manage
               </TabsTrigger>
-            ))}
-            <TabsTrigger 
-              value="order" 
-              className={`py-2 px-4 whitespace-nowrap ${activeTab === "order" ? 'bg-slate-600' : ''}`}
-            >
-              <Settings2 className="w-4 h-4 mr-1" /> Manage
-            </TabsTrigger>
-          </TabsList>
+            </TabsList>
+          </div>
 
           <Button
             size="icon"
             variant="ghost"
             onClick={() => navigateTabs("right")}
             disabled={!canNavigateRight}
-            className="text-white hover:bg-slate-700"
+            className="text-white hover:bg-slate-700 flex-shrink-0"
           >
             <ChevronRight className="w-5 h-5" />
           </Button>
@@ -1314,7 +1341,7 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
             {/* Current Sections */}
             <div className="mb-6">
               <h4 className="text-md font-semibold text-gray-300 mb-3">Current Sections</h4>
-              {sectionOrder.map((section, idx) => (
+              {sectionOrder.map((section: string, idx: number) => (
                 <div key={section} className="flex justify-between items-center bg-slate-700/50 p-3 rounded-md mb-2">
                   <span className="capitalize text-gray-200">{section}</span>
                   <div className="flex gap-2">

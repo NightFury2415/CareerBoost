@@ -215,27 +215,30 @@ export default function ResumeBuilder() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col lg:flex-row gap-8">
-        <div className="flex-1 lg:max-w-[50%]">
+      <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col lg:flex-row lg:gap-8 overflow-hidden">
+        <div className="flex-1 min-w-0 overflow-hidden">
           <ResumeEditor
             resumeData={resumeData}
             setResumeData={setResumeData}
           />
         </div>
 
-        <div className="flex-1 lg:max-w-[50%] sticky top-20 h-fit flex justify-center items-start">
-          <div
-            style={{
-              backgroundColor: "#ffffff",
-              border: "1px solid #e2e8f0",
-              borderRadius: "0.5rem",
-              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
-              maxWidth: "210mm", // Ensure it doesn't exceed A4 width
-              width: "100%", // Make it responsive
-            }}
-          >
-            <div id="resume-preview" className="content-wrapper">
-              <ResumePreview data={resumeData} />
+        <div className="flex-1 lg:max-w-[50%] sticky top-20 h-[calc(100vh-5rem)] overflow-auto">
+          <div className="min-h-full" style={{ padding: "1rem", display: "flex", justifyContent: "center", alignItems: "flex-start", minWidth: "calc(210mm + 2rem)" }}>
+            <div
+              style={{
+                backgroundColor: "#ffffff",
+                border: "1px solid #e2e8f0",
+                borderRadius: "0.5rem",
+                boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
+                width: "210mm", // Fixed A4 width
+                minHeight: "297mm", // Fixed A4 height
+                flexShrink: 0, // Prevent shrinking
+              }}
+            >
+              <div id="resume-preview" className="content-wrapper">
+                <ResumePreview data={resumeData} />
+              </div>
             </div>
           </div>
         </div>

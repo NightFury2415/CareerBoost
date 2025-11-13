@@ -502,13 +502,14 @@ export default function ResumePreview({ data }: any) {
         width: "210mm",
         minHeight: "297mm",
         padding: "15mm 20mm",
-        margin: "0 auto",
+        margin: "0",
         backgroundColor: "#ffffff",
         boxShadow: "0 0 10px rgba(0,0,0,0.1)",
         color: "#000",
         fontFamily: "Georgia, serif",
         fontSize: "11px",
         boxSizing: "border-box",
+        position: "relative",
       }}
       className="font-serif"
     >
@@ -709,8 +710,8 @@ export default function ResumePreview({ data }: any) {
 
       {/* Render sections in custom order */}
       {sectionOrder
-        .filter((section) => section !== "personal")
-        .map((section) => (
+        .filter((section: string) => section !== "personal")
+        .map((section: string) => (
           <div key={section}>{renderSection(section)}</div>
         ))}
     </div>
