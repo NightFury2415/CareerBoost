@@ -7,7 +7,6 @@ import ResumePreview from "@/components/resume-preview";
 import ResumeEditor from "@/components/resume-editor";
 
 export default function ResumeBuilder() {
-  const [showPreview, setShowPreview] = useState(true);
   const [resumeData, setResumeData] = useState({
     personal: {
       name: "Dev Modi",
@@ -207,50 +206,38 @@ export default function ResumeBuilder() {
           <div className="flex items-center gap-2">
             <Button
               onClick={downloadResume}
-              variant="outline"
-              size="sm"
-              className="gap-2 bg-transparent"
+              className="gap-2 bg-cyan-500 hover:bg-cyan-600 text-black font-bold py-2 text-sm rounded-lg"
             >
               Download PDF
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowPreview(!showPreview)}
-              className="gap-2"
-            >
-              {showPreview ? "Hide" : "Show"} Preview
             </Button>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid lg:grid-cols-2 gap-8">
-          <div className="order-2 lg:order-1">
-            <ResumeEditor
-              resumeData={resumeData}
-              setResumeData={setResumeData}
-            />
-          </div>
+      <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col lg:flex-row gap-8">
+        <div className="flex-1 lg:max-w-[50%]">
+          <ResumeEditor
+            resumeData={resumeData}
+            setResumeData={setResumeData}
+          />
+        </div>
 
-          {showPreview && (
-            <div className="order-1 lg:order-2 sticky top-20 h-fit">
-              <div
-                style={{
-                  backgroundColor: "#ffffff",
-                  border: "1px solid #e2e8f0",
-                  borderRadius: "0.5rem",
-                  boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
-                }}
-              >
-                <div id="resume-preview" className="content-wrapper">
-                  <ResumePreview data={resumeData} />
-                </div>
-              </div>
+        <div className="flex-1 lg:max-w-[50%] sticky top-20 h-fit flex justify-center items-start">
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              border: "1px solid #e2e8f0",
+              borderRadius: "0.5rem",
+              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
+              maxWidth: "210mm", // Ensure it doesn't exceed A4 width
+              width: "100%", // Make it responsive
+            }}
+          >
+            <div id="resume-preview" className="content-wrapper">
+              <ResumePreview data={resumeData} />
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
