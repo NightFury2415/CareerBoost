@@ -3,54 +3,14 @@
 import { Mail, Phone, MapPin, Globe, Linkedin, Github } from "lucide-react";
 
 export default function ResumePreview({ data }: any) {
-  // Helper function to auto-highlight important content
-  const autoHighlight = (text: string) => {
-    if (!text) return text;
-
-    // Highlight numbers (especially percentages, dollars, and metrics)
-    text = text.replace(/(\d+[%$]?[\w]*|\$\d+[,\d]*)/g, "<strong>$1</strong>");
-
-    // Highlight common achievement keywords
-    const keywords = [
-      "increased",
-      "decreased",
-      "improved",
-      "reduced",
-      "achieved",
-      "implemented",
-      "launched",
-      "developed",
-      "created",
-      "built",
-      "designed",
-      "led",
-      "managed",
-      "optimized",
-      "streamlined",
-      "automated",
-      "enhanced",
-    ];
-
-    keywords.forEach((keyword) => {
-      const regex = new RegExp(`\\b(${keyword})\\b`, "gi");
-      text = text.replace(regex, "<strong>$1</strong>");
-    });
-
-    return text;
-  };
-
   // Helper function to render formatted text (bold, italic, underline, color)
-  const renderFormattedText = (text: string, autoHighlightEnabled = true) => {
+  const renderFormattedText = (text: string) => {
     if (!text) return null;
 
-    // First apply auto-highlighting if enabled
-    let formatted = autoHighlightEnabled ? autoHighlight(text) : text;
-
-    // Then apply manual formatting
-    formatted = formatted
-      // Color: [color:#hex]text[/color]
+    let formatted = text
+      // Color with span tags - UPDATED to match editor format
       .replace(
-        /\[color:(#[0-9a-fA-F]{6})\](.+?)\[\/color\]/g,
+        /<span style="color:(#[0-9a-fA-F]{6})">(.+?)<\/span>/g,
         '<span style="color:$1">$2</span>'
       )
       // Bold: **text**
@@ -63,6 +23,20 @@ export default function ResumePreview({ data }: any) {
     return <span dangerouslySetInnerHTML={{ __html: formatted }} />;
   };
 
+  // Get font size helper - UPDATED to match editor structure
+  const getFontSize = (field: string, section?: string, id?: number) => {
+    if (section === "personal") {
+      return data.personalFontSizes?.[field] || "10.5";
+    } else if (section === "experience" && id) {
+      return data.experienceFieldFontSizes?.[`${id}-${field}`] || data.experienceFontSize || "11";
+    } else if (section === "projects" && id) {
+      return data.projectFieldFontSizes?.[`${id}-${field}`] || data.projectsFontSize || "11";
+    } else if (section === "education" && id) {
+      return data.educationFieldFontSizes?.[`${id}-${field}`] || data.educationFontSize || "11";
+    }
+    return data[`${section}FontSize`] || "11";
+  };
+
   // Get section order from data or use default
   const sectionOrder = data.sectionOrder || [
     "personal",
@@ -73,11 +47,6 @@ export default function ResumePreview({ data }: any) {
     "education",
   ];
 
-  // Get font sizes
-  const getFontSize = (section: string, defaultSize: string = "11") => {
-    return data[`${section}FontSize`] || defaultSize;
-  };
-
   // Render individual sections based on type
   const renderSection = (section: string) => {
     switch (section) {
@@ -86,7 +55,7 @@ export default function ResumePreview({ data }: any) {
 
       case "summary":
         if (!data.summary || !data.summary.trim()) return null;
-        const summaryFontSize = getFontSize("summary");
+        const summaryFontSize = getFontSize("summary", "summary");
         return (
           <div style={{ marginBottom: "10px" }}>
             <h2
@@ -118,7 +87,7 @@ export default function ResumePreview({ data }: any) {
           (items: any) => items && items.length > 0
         );
         if (!hasSkills) return null;
-        const skillsFontSize = getFontSize("skills");
+        const skillsFontSize = getFontSize("skills", "skills");
 
         return (
           <div style={{ marginBottom: "10px" }}>
@@ -165,7 +134,6 @@ export default function ResumePreview({ data }: any) {
           (exp: any) => exp.position || exp.company
         );
         if (validExperiences.length === 0) return null;
-        const expFontSize = getFontSize("experience");
 
         return (
           <div style={{ marginBottom: "10px" }}>
@@ -183,69 +151,80 @@ export default function ResumePreview({ data }: any) {
             <div
               style={{ display: "flex", flexDirection: "column", gap: "8px" }}
             >
-              {validExperiences.map((exp: any, idx: number) => (
-                <div
-                  key={exp.id || idx}
-                  style={{ fontSize: `${expFontSize}px` }}
-                >
-                  {(exp.position || exp.startDate || exp.endDate) && (
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        fontWeight: "bold",
-                        marginBottom: "2px",
-                      }}
-                    >
-                      <span>{exp.position}</span>
-                      {(exp.startDate || exp.endDate) && (
-                        <span>
-                          {exp.startDate} {exp.startDate && exp.endDate && "–"}{" "}
-                          {exp.endDate}
+              {validExperiences.map((exp: any, idx: number) => {
+                const positionSize = getFontSize("position", "experience", exp.id);
+                const companySize = getFontSize("company", "experience", exp.id);
+                const locationSize = getFontSize("location", "experience", exp.id);
+                const startDateSize = getFontSize("startDate", "experience", exp.id);
+                const bulletSize = data.experienceFontSize || "11";
+
+                return (
+                  <div key={exp.id || idx}>
+                    {(exp.position || exp.startDate || exp.endDate) && (
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          fontWeight: "bold",
+                          marginBottom: "2px",
+                        }}
+                      >
+                        <span style={{ fontSize: `${positionSize}px` }}>
+                          {exp.position}
                         </span>
-                      )}
-                    </div>
-                  )}
-                  {(exp.company || exp.location) && (
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        color: "#555",
-                        marginBottom: "3px",
-                        fontSize: `${parseInt(expFontSize) - 0.5}px`,
-                      }}
-                    >
-                      <span>{exp.company}</span>
-                      <span>{exp.location}</span>
-                    </div>
-                  )}
-                  {exp.bullets && exp.bullets.length > 0 && (
-                    <div>
-                      {exp.bullets
-                        .filter((bullet: string) => bullet && bullet.trim())
-                        .map((bullet: string, bidx: number) => (
-                          <div
-                            key={bidx}
-                            style={{
-                              display: "flex",
-                              gap: "6px",
-                              lineHeight: "1.5",
-                              marginBottom: "1px",
-                            }}
-                          >
-                            <span style={{ flexShrink: 0, minWidth: "8px" }}>
-                              {exp.bulletStyle || "•"}
-                            </span>
-                            <span style={{ flex: 1 }}>
-                              {renderFormattedText(bullet)}
-                            </span>
-                          </div>
-                        ))}
-                    </div>
-                  )}
-                </div>
-              ))}
+                        {(exp.startDate || exp.endDate) && (
+                          <span style={{ fontSize: `${startDateSize}px` }}>
+                            {exp.startDate} {exp.startDate && exp.endDate && "–"}{" "}
+                            {exp.endDate}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    {(exp.company || exp.location) && (
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          color: "#555",
+                          marginBottom: "3px",
+                        }}
+                      >
+                        <span style={{ fontSize: `${companySize}px` }}>
+                          {exp.company}
+                        </span>
+                        <span style={{ fontSize: `${locationSize}px` }}>
+                          {exp.location}
+                        </span>
+                      </div>
+                    )}
+                    {exp.bullets && exp.bullets.length > 0 && (
+                      <div>
+                        {exp.bullets
+                          .filter((bullet: string) => bullet && bullet.trim())
+                          .map((bullet: string, bidx: number) => (
+                            <div
+                              key={bidx}
+                              style={{
+                                display: "flex",
+                                gap: "6px",
+                                lineHeight: "1.5",
+                                marginBottom: "1px",
+                                fontSize: `${bulletSize}px`,
+                              }}
+                            >
+                              <span style={{ flexShrink: 0, minWidth: "8px" }}>
+                                {exp.bulletStyle || "•"}
+                              </span>
+                              <span style={{ flex: 1 }}>
+                                {renderFormattedText(bullet)}
+                              </span>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         );
@@ -256,7 +235,6 @@ export default function ResumePreview({ data }: any) {
           (proj: any) => proj.title || proj.description
         );
         if (validProjects.length === 0) return null;
-        const projFontSize = getFontSize("projects");
 
         return (
           <div style={{ marginBottom: "10px" }}>
@@ -274,141 +252,118 @@ export default function ResumePreview({ data }: any) {
             <div
               style={{ display: "flex", flexDirection: "column", gap: "8px" }}
             >
-              {validProjects.map((proj: any, idx: number) => (
-                <div
-                  key={proj.id || idx}
-                  style={{ fontSize: `${projFontSize}px` }}
-                >
-                  {(proj.title ||
-                    (proj.technologies && proj.technologies.length > 0)) && (
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        fontWeight: "bold",
-                        marginBottom: "2px",
-                      }}
-                    >
-                      <span>{proj.title}</span>
-                      {proj.technologies && proj.technologies.length > 0 && (
-                        <span style={{ color: "#555", fontWeight: "normal" }}>
-                          {proj.technologies.filter(Boolean).join(", ")}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  {proj.type && (
-                    <p
-                      style={{
-                        color: "#666",
-                        marginBottom: "2px",
-                        fontSize: `${parseInt(projFontSize) - 1}px`,
-                        margin: "0 0 2px 0",
-                      }}
-                    >
-                      {proj.type}
-                    </p>
-                  )}
-                  {proj.description && (
-                    <p
-                      style={{
-                        color: "#333",
-                        marginBottom: "2px",
-                        lineHeight: "1.5",
-                        margin: "0 0 2px 0",
-                      }}
-                    >
-                      {renderFormattedText(proj.description)}
-                    </p>
-                  )}
-                  {proj.impact && (
-                    <p
-                      style={{
-                        color: "#333",
-                        marginBottom: "2px",
-                        lineHeight: "1.5",
-                        margin: "0 0 2px 0",
-                      }}
-                    >
-                      {renderFormattedText(proj.impact)}
-                    </p>
-                  )}
+              {validProjects.map((proj: any, idx: number) => {
+                const titleSize = getFontSize("title", "projects", proj.id);
+                const projFontSize = data.projectsFontSize || "11";
 
-                  {/* Project bullets */}
-                  {proj.bullets && proj.bullets.length > 0 && (
-                    <div style={{ marginTop: "3px" }}>
-                      {proj.bullets
-                        .filter((bullet: string) => bullet && bullet.trim())
-                        .map((bullet: string, bidx: number) => (
-                          <div
-                            key={bidx}
+                return (
+                  <div key={proj.id || idx}>
+                    {(proj.title ||
+                      (proj.technologies && proj.technologies.length > 0)) && (
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          fontWeight: "bold",
+                          marginBottom: "2px",
+                        }}
+                      >
+                        <span style={{ fontSize: `${titleSize}px` }}>
+                          {proj.title}
+                        </span>
+                        {proj.technologies && proj.technologies.length > 0 && (
+                          <span
                             style={{
-                              display: "flex",
-                              gap: "6px",
-                              lineHeight: "1.5",
-                              marginBottom: "1px",
+                              color: "#555",
+                              fontWeight: "normal",
+                              fontSize: `${projFontSize}px`,
                             }}
                           >
-                            <span style={{ flexShrink: 0, minWidth: "8px" }}>
-                              {proj.bulletStyle || "•"}
-                            </span>
-                            <span style={{ flex: 1 }}>
-                              {renderFormattedText(bullet)}
-                            </span>
-                          </div>
-                        ))}
-                    </div>
-                  )}
+                            {proj.technologies.filter(Boolean).join(", ")}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    {proj.type && (
+                      <p
+                        style={{
+                          color: "#666",
+                          marginBottom: "2px",
+                          fontSize: `${parseInt(projFontSize) - 1}px`,
+                          margin: "0 0 2px 0",
+                        }}
+                      >
+                        {proj.type}
+                      </p>
+                    )}
+                    {proj.description && (
+                      <p
+                        style={{
+                          color: "#333",
+                          marginBottom: "2px",
+                          lineHeight: "1.5",
+                          margin: "0 0 2px 0",
+                          fontSize: `${projFontSize}px`,
+                        }}
+                      >
+                        {renderFormattedText(proj.description)}
+                      </p>
+                    )}
+                    {proj.impact && (
+                      <p
+                        style={{
+                          color: "#333",
+                          marginBottom: "2px",
+                          lineHeight: "1.5",
+                          margin: "0 0 2px 0",
+                          fontSize: `${projFontSize}px`,
+                        }}
+                      >
+                        {renderFormattedText(proj.impact)}
+                      </p>
+                    )}
 
-                  {proj.link && (
-                    <p
-                      style={{
-                        color: "#0066cc",
-                        fontSize: `${parseInt(projFontSize) - 1}px`,
-                        margin: "2px 0 0 0",
-                      }}
-                    >
-                      {proj.link}
-                    </p>
-                  )}
+                    {/* Project bullets */}
+                    {proj.bullets && proj.bullets.length > 0 && (
+                      <div style={{ marginTop: "3px" }}>
+                        {proj.bullets
+                          .filter((bullet: string) => bullet && bullet.trim())
+                          .map((bullet: string, bidx: number) => (
+                            <div
+                              key={bidx}
+                              style={{
+                                display: "flex",
+                                gap: "6px",
+                                lineHeight: "1.5",
+                                marginBottom: "1px",
+                                fontSize: `${projFontSize}px`,
+                              }}
+                            >
+                              <span style={{ flexShrink: 0, minWidth: "8px" }}>
+                                {proj.bulletStyle || "•"}
+                              </span>
+                              <span style={{ flex: 1 }}>
+                                {renderFormattedText(bullet)}
+                              </span>
+                            </div>
+                          ))}
+                      </div>
+                    )}
 
-                  {/* Custom fields */}
-                  {Object.entries(proj)
-                    .filter(
-                      ([key]) =>
-                        ![
-                          "id",
-                          "title",
-                          "type",
-                          "description",
-                          "impact",
-                          "technologies",
-                          "link",
-                          "bullets",
-                          "bulletStyle",
-                        ].includes(key)
-                    )
-                    .map(([key, value]: any) => {
-                      if (!value) return null;
-                      return (
-                        <p
-                          key={key}
-                          style={{
-                            color: "#333",
-                            marginBottom: "2px",
-                            fontSize: `${parseInt(projFontSize) - 0.5}px`,
-                            margin: "2px 0 0 0",
-                          }}
-                        >
-                          <strong style={{ textTransform: "capitalize" }}>
-                            {key}:
-                          </strong>{" "}
-                          {value}
-                        </p>
-                      );
-                    })}
-                </div>
-              ))}
+                    {proj.link && (
+                      <p
+                        style={{
+                          color: "#0066cc",
+                          fontSize: `${parseInt(projFontSize) - 1}px`,
+                          margin: "2px 0 0 0",
+                        }}
+                      >
+                        {proj.link}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         );
@@ -419,7 +374,6 @@ export default function ResumePreview({ data }: any) {
           (edu: any) => edu.school || edu.degree
         );
         if (validEducation.length === 0) return null;
-        const eduFontSize = getFontSize("education");
 
         return (
           <div style={{ marginBottom: "10px" }}>
@@ -437,215 +391,108 @@ export default function ResumePreview({ data }: any) {
             <div
               style={{ display: "flex", flexDirection: "column", gap: "8px" }}
             >
-              {validEducation.map((edu: any, idx: number) => (
-                <div
-                  key={edu.id || idx}
-                  style={{ fontSize: `${eduFontSize}px` }}
-                >
-                  {(edu.school || edu.graduationDate) && (
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        fontWeight: "bold",
-                        marginBottom: "2px",
-                      }}
-                    >
-                      <span>{edu.school}</span>
-                      <span>{edu.graduationDate}</span>
-                    </div>
-                  )}
-                  {edu.degree && (
-                    <div style={{ color: "#555", lineHeight: "1.4" }}>
-                      {edu.degree}
-                    </div>
-                  )}
-                  {edu.minor && (
-                    <div
-                      style={{
-                        color: "#555",
-                        fontSize: `${parseInt(eduFontSize) - 0.5}px`,
-                        lineHeight: "1.4",
-                      }}
-                    >
-                      Minor: {edu.minor}
-                    </div>
-                  )}
-                  {edu.location && (
-                    <div
-                      style={{
-                        color: "#555",
-                        fontSize: `${parseInt(eduFontSize) - 0.5}px`,
-                        lineHeight: "1.4",
-                      }}
-                    >
-                      {edu.location}
-                    </div>
-                  )}
-                  {edu.gpa && (
-                    <div
-                      style={{
-                        color: "#555",
-                        fontSize: `${parseInt(eduFontSize) - 0.5}px`,
-                        lineHeight: "1.4",
-                      }}
-                    >
-                      <strong>GPA: {edu.gpa}</strong>
-                    </div>
-                  )}
-                  {edu.honors && (
-                    <div
-                      style={{
-                        color: "#333",
-                        marginTop: "2px",
-                        lineHeight: "1.4",
-                      }}
-                    >
-                      {renderFormattedText(edu.honors)}
-                    </div>
-                  )}
-                  {edu.description && (
-                    <div
-                      style={{
-                        color: "#333",
-                        marginTop: "2px",
-                        lineHeight: "1.4",
-                      }}
-                    >
-                      {renderFormattedText(edu.description)}
-                    </div>
-                  )}
+              {validEducation.map((edu: any, idx: number) => {
+                const schoolSize = getFontSize("school", "education", edu.id);
+                const degreeSize = getFontSize("degree", "education", edu.id);
+                const gradDateSize = getFontSize("graduationDate", "education", edu.id);
+                const eduFontSize = data.educationFontSize || "11";
 
-                  {/* Custom fields */}
-                  {Object.entries(edu)
-                    .filter(
-                      ([key]) =>
-                        ![
-                          "id",
-                          "school",
-                          "degree",
-                          "minor",
-                          "location",
-                          "graduationDate",
-                          "gpa",
-                          "honors",
-                          "description",
-                        ].includes(key)
-                    )
-                    .map(([key, value]: any) => {
-                      if (!value) return null;
-                      return (
-                        <div
-                          key={key}
-                          style={{
-                            color: "#333",
-                            marginTop: "2px",
-                            fontSize: `${parseInt(eduFontSize) - 0.5}px`,
-                            lineHeight: "1.4",
-                          }}
-                        >
-                          <strong style={{ textTransform: "capitalize" }}>
-                            {key}:
-                          </strong>{" "}
-                          {value}
-                        </div>
-                      );
-                    })}
-                </div>
-              ))}
+                return (
+                  <div key={edu.id || idx}>
+                    {(edu.school || edu.graduationDate) && (
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          fontWeight: "bold",
+                          marginBottom: "2px",
+                        }}
+                      >
+                        <span style={{ fontSize: `${schoolSize}px` }}>
+                          {edu.school}
+                        </span>
+                        <span style={{ fontSize: `${gradDateSize}px` }}>
+                          {edu.graduationDate}
+                        </span>
+                      </div>
+                    )}
+                    {edu.degree && (
+                      <div
+                        style={{
+                          color: "#555",
+                          lineHeight: "1.4",
+                          fontSize: `${degreeSize}px`,
+                        }}
+                      >
+                        {edu.degree}
+                      </div>
+                    )}
+                    {edu.minor && (
+                      <div
+                        style={{
+                          color: "#555",
+                          fontSize: `${parseInt(eduFontSize) - 0.5}px`,
+                          lineHeight: "1.4",
+                        }}
+                      >
+                        Minor: {edu.minor}
+                      </div>
+                    )}
+                    {edu.location && (
+                      <div
+                        style={{
+                          color: "#555",
+                          fontSize: `${parseInt(eduFontSize) - 0.5}px`,
+                          lineHeight: "1.4",
+                        }}
+                      >
+                        {edu.location}
+                      </div>
+                    )}
+                    {edu.gpa && (
+                      <div
+                        style={{
+                          color: "#555",
+                          fontSize: `${parseInt(eduFontSize) - 0.5}px`,
+                          lineHeight: "1.4",
+                        }}
+                      >
+                        <strong>GPA: {edu.gpa}</strong>
+                      </div>
+                    )}
+                    {edu.honors && (
+                      <div
+                        style={{
+                          color: "#333",
+                          marginTop: "2px",
+                          lineHeight: "1.4",
+                          fontSize: `${eduFontSize}px`,
+                        }}
+                      >
+                        {renderFormattedText(edu.honors)}
+                      </div>
+                    )}
+                    {edu.description && (
+                      <div
+                        style={{
+                          color: "#333",
+                          marginTop: "2px",
+                          lineHeight: "1.4",
+                          fontSize: `${eduFontSize}px`,
+                        }}
+                      >
+                        {renderFormattedText(edu.description)}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         );
 
       default:
-        // Custom sections - check mode
-        if (
-          !data[section] ||
-          (typeof data[section] === "string" && !data[section].trim())
-        )
-          return null;
-
-        const customFontSize = getFontSize(section);
-
-        // Check if it's category mode (object with categories)
-        if (
-          typeof data[section] === "object" &&
-          !Array.isArray(data[section]) &&
-          data[section] !== null
-        ) {
-          const hasContent = Object.values(data[section]).some(
-            (items: any) => Array.isArray(items) && items.length > 0
-          );
-          if (!hasContent) return null;
-
-          return (
-            <div style={{ marginBottom: "10px" }}>
-              <h2
-                style={{
-                  fontSize: "13px",
-                  fontWeight: "bold",
-                  marginBottom: "4px",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px",
-                }}
-              >
-                {section.replace(/([A-Z])/g, " $1").toUpperCase()}
-              </h2>
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: "3px" }}
-              >
-                {Object.entries(data[section]).map(([category, items]: any) => {
-                  if (!items || items.length === 0) return null;
-                  return (
-                    <div
-                      key={category}
-                      style={{
-                        fontSize: `${customFontSize}px`,
-                        lineHeight: "1.4",
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontWeight: "600",
-                          textTransform: "capitalize",
-                        }}
-                      >
-                        {category.replace(/([A-Z])/g, " $1")}:
-                      </span>{" "}
-                      {items.join(", ")}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        }
-
-        // Paragraph mode (string)
-        return (
-          <div style={{ marginBottom: "10px" }}>
-            <h2
-              style={{
-                fontSize: "13px",
-                fontWeight: "bold",
-                marginBottom: "4px",
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-              }}
-            >
-              {section.replace(/([A-Z])/g, " $1").toUpperCase()}
-            </h2>
-            <p
-              style={{
-                fontSize: `${customFontSize}px`,
-                lineHeight: "1.5",
-                margin: 0,
-              }}
-            >
-              {renderFormattedText(data[section])}
-            </p>
-          </div>
-        );
+        return null;
     }
   };
 
@@ -669,7 +516,7 @@ export default function ResumePreview({ data }: any) {
       <div style={{ textAlign: "center", marginBottom: "12px" }}>
         <h1
           style={{
-            fontSize: "28px",
+            fontSize: `${getFontSize("name", "personal")}px`,
             fontWeight: "bold",
             marginBottom: "6px",
             margin: "0 0 6px 0",
@@ -685,7 +532,6 @@ export default function ResumePreview({ data }: any) {
             justifyContent: "center",
             gap: "12px",
             flexWrap: "wrap",
-            fontSize: "10.5px",
             marginTop: "4px",
           }}
         >
@@ -695,6 +541,7 @@ export default function ResumePreview({ data }: any) {
                 display: "inline-flex",
                 gap: "3px",
                 alignItems: "center",
+                fontSize: `${getFontSize("location", "personal")}px`,
               }}
             >
               <MapPin
@@ -711,6 +558,7 @@ export default function ResumePreview({ data }: any) {
                 display: "inline-flex",
                 gap: "3px",
                 alignItems: "center",
+                fontSize: `${getFontSize("phone", "personal")}px`,
               }}
             >
               <Phone
@@ -727,6 +575,7 @@ export default function ResumePreview({ data }: any) {
                 display: "inline-flex",
                 gap: "3px",
                 alignItems: "center",
+                fontSize: `${getFontSize("email", "personal")}px`,
               }}
             >
               <Mail
@@ -761,7 +610,6 @@ export default function ResumePreview({ data }: any) {
               justifyContent: "center",
               gap: "12px",
               flexWrap: "wrap",
-              fontSize: "10.5px",
               marginTop: "3px",
             }}
           >
@@ -771,6 +619,7 @@ export default function ResumePreview({ data }: any) {
                   display: "inline-flex",
                   gap: "3px",
                   alignItems: "center",
+                  fontSize: `${getFontSize("website", "personal")}px`,
                 }}
               >
                 <Globe
@@ -787,6 +636,7 @@ export default function ResumePreview({ data }: any) {
                   display: "inline-flex",
                   gap: "3px",
                   alignItems: "center",
+                  fontSize: `${getFontSize("linkedin", "personal")}px`,
                 }}
               >
                 <Linkedin
@@ -803,6 +653,7 @@ export default function ResumePreview({ data }: any) {
                   display: "inline-flex",
                   gap: "3px",
                   alignItems: "center",
+                  fontSize: `${getFontSize("github", "personal")}px`,
                 }}
               >
                 <Github
@@ -831,7 +682,14 @@ export default function ResumePreview({ data }: any) {
               .map(([key, value]: any) => {
                 if (!value) return null;
                 return (
-                  <div key={key} style={{ display: "inline-flex", gap: "3px" }}>
+                  <div
+                    key={key}
+                    style={{
+                      display: "inline-flex",
+                      gap: "3px",
+                      fontSize: `${getFontSize(key, "personal")}px`,
+                    }}
+                  >
                     <span style={{ textTransform: "capitalize" }}>{key}:</span>
                     <span>{value}</span>
                   </div>
