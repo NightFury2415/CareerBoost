@@ -1225,7 +1225,7 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
 
                     <SelectContent className="bg-slate-800 text-white">
                       <SelectItem value="left">Left</SelectItem>
-                      <SelectItem value="center">Center</SelectItem>
+
                       <SelectItem value="right">Right</SelectItem>
                     </SelectContent>
                   </Select>
@@ -1546,7 +1546,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
 
                 <SelectContent className="bg-slate-800 text-white">
                   <SelectItem value="left">Left</SelectItem>
-                  <SelectItem value="center">Center</SelectItem>
                   <SelectItem value="right">Right</SelectItem>
                 </SelectContent>
               </Select>
@@ -1846,7 +1845,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
 
                 <SelectContent className="bg-slate-800 text-white">
                   <SelectItem value="left">Left</SelectItem>
-                  <SelectItem value="center">Center</SelectItem>
                   <SelectItem value="right">Right</SelectItem>
                 </SelectContent>
               </Select>
