@@ -62,6 +62,52 @@ export default function ResumePreview({ data }: any) {
   ];
 
   // -------------------------------
+  // Helper: Left layout with divider
+  // -------------------------------
+  const layoutRow = (
+    left: any,
+    right: any,
+    layout: "left" | "right",
+    fontLeft: any,
+    fontRight: any
+  ) => {
+    if (layout === "left") {
+      return (
+        <div
+          style={{
+            fontWeight: "bold",
+            display: "flex",
+            gap: "6px",
+            marginBottom: "1px",
+          }}
+        >
+          <span style={{ fontSize: `${fontLeft}px` }}>{left}</span>
+          {right && (
+            <>
+              <span style={{ fontSize: `${fontLeft}px` }}>|</span>
+              <span style={{ fontSize: `${fontRight}px` }}>{right}</span>
+            </>
+          )}
+        </div>
+      );
+    }
+
+    // RIGHT layout (default – spaced apart)
+    return (
+      <div
+        style={{
+          fontWeight: "bold",
+          display: "flex",
+          justifyContent: "space-between",
+        }}
+      >
+        <span style={{ fontSize: `${fontLeft}px` }}>{left}</span>
+        <span style={{ fontSize: `${fontRight}px` }}>{right}</span>
+      </div>
+    );
+  };
+
+  // -------------------------------
   // Render Each Section
   // -------------------------------
   const renderSection = (section: string) => {
@@ -178,30 +224,23 @@ export default function ResumePreview({ data }: any) {
               const dateSize = getFontSize("startDate", "experience", exp.id);
               const bulletSize = data.experienceFontSize || "11";
 
+              const layout = data?.dateLayout?.experience || "right";
+
               return (
                 <div key={exp.id} style={{ marginBottom: "4px" }}>
-                  {/* Title + Dates */}
-                  {(exp.position || exp.startDate) && (
-                    <div
-                      style={{
-                        fontWeight: "bold",
-                        display: "flex",
-                        justifyContent: "space-between",
-                      }}
-                    >
-                      <span style={{ fontSize: `${posSize}px` }}>
-                        {exp.position}
-                      </span>
+                  {/* Title + Date (aligned) */}
+                  {(exp.position || exp.startDate) &&
+                    layoutRow(
+                      exp.position,
+                      `${exp.startDate}${
+                        exp.startDate && exp.endDate ? " – " : ""
+                      }${exp.endDate}`,
+                      layout,
+                      posSize,
+                      dateSize
+                    )}
 
-                      <span style={{ fontSize: `${dateSize}px` }}>
-                        {exp.startDate}
-                        {exp.startDate && exp.endDate && " – "}
-                        {exp.endDate}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Company + Location */}
+                  {/* Company + Location (always right spaced) */}
                   {(exp.company || exp.location) && (
                     <div
                       style={{
@@ -273,28 +312,20 @@ export default function ResumePreview({ data }: any) {
               const titleSize = getFontSize("title", "projects", proj.id);
               const projSize = data.projectsFontSize || "11";
 
+              const layout = data?.dateLayout?.projects || "right";
+
               return (
                 <div key={proj.id} style={{ marginBottom: "4px" }}>
-                  {/* Title + Tech */}
-                  <div
-                    style={{
-                      fontWeight: "bold",
-                      display: "flex",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <span style={{ fontSize: `${titleSize}px` }}>
-                      {proj.title}
-                    </span>
-
-                    {proj.technologies?.length > 0 && (
-                      <span
-                        style={{ fontSize: `${projSize}px`, color: "#555" }}
-                      >
-                        {proj.technologies.join(", ")}
-                      </span>
-                    )}
-                  </div>
+                  {/* Title + Technologies */}
+                  {layoutRow(
+                    proj.title,
+                    proj.technologies?.length
+                      ? proj.technologies.join(", ")
+                      : "",
+                    layout,
+                    titleSize,
+                    projSize
+                  )}
 
                   {/* Type */}
                   {proj.type && (
@@ -377,10 +408,10 @@ export default function ResumePreview({ data }: any) {
       case "education":
         if (!data.education?.length) return null;
 
-        const validEducation = data.education.filter(
+        const validEdu = data.education.filter(
           (e: any) => e.school || e.degree
         );
-        if (!validEducation.length) return null;
+        if (!validEdu.length) return null;
 
         return (
           <div style={{ marginBottom: "4px" }}>
@@ -396,7 +427,7 @@ export default function ResumePreview({ data }: any) {
               Education
             </h2>
 
-            {validEducation.map((edu: any) => {
+            {validEdu.map((edu: any) => {
               const schoolSize = getFontSize("school", "education", edu.id);
               const degreeSize = getFontSize("degree", "education", edu.id);
               const gradSize = getFontSize(
@@ -406,23 +437,18 @@ export default function ResumePreview({ data }: any) {
               );
               const eduSize = data.educationFontSize || "11";
 
+              const layout = data?.dateLayout?.education || "right";
+
               return (
                 <div key={edu.id} style={{ marginBottom: "4px" }}>
                   {/* School + Grad Date */}
-                  <div
-                    style={{
-                      fontWeight: "bold",
-                      display: "flex",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <span style={{ fontSize: `${schoolSize}px` }}>
-                      {edu.school}
-                    </span>
-                    <span style={{ fontSize: `${gradSize}px` }}>
-                      {edu.graduationDate}
-                    </span>
-                  </div>
+                  {layoutRow(
+                    edu.school,
+                    edu.graduationDate,
+                    layout,
+                    schoolSize,
+                    gradSize
+                  )}
 
                   {edu.degree && (
                     <div
@@ -502,7 +528,6 @@ export default function ResumePreview({ data }: any) {
       /*-------------------------------------------*/
       default:
         const sectionContent = data[section];
-
         if (!sectionContent) return null;
 
         const customSize = getFontSize(section);
@@ -586,13 +611,12 @@ export default function ResumePreview({ data }: any) {
       style={{
         width: "210mm",
         minHeight: "297mm",
-        padding: "4mm 6mm", // REDUCED MARGINS
+        padding: "4mm 6mm",
         backgroundColor: "#ffffff",
         color: "#000",
         fontFamily: "Georgia, serif",
         fontSize: "11px",
         boxSizing: "border-box",
-        position: "relative",
       }}
     >
       {/* ---------------------- */}
@@ -609,7 +633,7 @@ export default function ResumePreview({ data }: any) {
           {data.personal.name || "Your Name"}
         </h1>
 
-        {/* Row 1 — Location / Phone / Email */}
+        {/* Row 1 */}
         <div
           style={{
             display: "flex",
@@ -619,14 +643,12 @@ export default function ResumePreview({ data }: any) {
             marginTop: "2px",
           }}
         >
-          {/* LOCATION */}
           {data.personal.location && (
             <span
               style={{
-                fontSize: `${getFontSize("location", "personal")}px`,
-                display: "inline-flex",
+                display: "flex",
                 gap: "3px",
-                alignItems: "center",
+                fontSize: `${getFontSize("location", "personal")}px`,
               }}
             >
               {data.iconVisibility?.location !== false && <MapPin size={10} />}
@@ -634,14 +656,12 @@ export default function ResumePreview({ data }: any) {
             </span>
           )}
 
-          {/* PHONE */}
           {data.personal.phone && (
             <span
               style={{
-                fontSize: `${getFontSize("phone", "personal")}px`,
-                display: "inline-flex",
+                display: "flex",
                 gap: "3px",
-                alignItems: "center",
+                fontSize: `${getFontSize("phone", "personal")}px`,
               }}
             >
               {data.iconVisibility?.phone !== false && <Phone size={10} />}
@@ -649,14 +669,12 @@ export default function ResumePreview({ data }: any) {
             </span>
           )}
 
-          {/* EMAIL */}
           {data.personal.email && (
             <span
               style={{
-                fontSize: `${getFontSize("email", "personal")}px`,
-                display: "inline-flex",
+                display: "flex",
                 gap: "3px",
-                alignItems: "center",
+                fontSize: `${getFontSize("email", "personal")}px`,
               }}
             >
               {data.iconVisibility?.email !== false && <Mail size={10} />}
@@ -665,7 +683,7 @@ export default function ResumePreview({ data }: any) {
           )}
         </div>
 
-        {/* Row 2 — Website / LinkedIn / GitHub */}
+        {/* Row 2 */}
         <div
           style={{
             display: "flex",
@@ -675,64 +693,55 @@ export default function ResumePreview({ data }: any) {
             marginTop: "2px",
           }}
         >
-          {/* WEBSITE */}
           {data.personal.website && (
             <span
               style={{
-                fontSize: `${getFontSize("website", "personal")}px`,
-                display: "inline-flex",
+                display: "flex",
                 gap: "3px",
-                alignItems: "center",
+                fontSize: `${getFontSize("website", "personal")}px`,
               }}
             >
               {data.iconVisibility?.website !== false &&
                 data.linkDisplay?.website !== "text" && <Globe size={10} />}
-
               {(data.linkDisplay?.website === "text" ||
                 data.linkDisplay?.website === "both") &&
                 data.personal.website}
             </span>
           )}
 
-          {/* LINKEDIN */}
           {data.personal.linkedin && (
             <span
               style={{
-                fontSize: `${getFontSize("linkedin", "personal")}px`,
-                display: "inline-flex",
+                display: "flex",
                 gap: "3px",
-                alignItems: "center",
+                fontSize: `${getFontSize("linkedin", "personal")}px`,
               }}
             >
               {data.iconVisibility?.linkedin !== false &&
                 data.linkDisplay?.linkedin !== "text" && <Linkedin size={10} />}
-
               {(data.linkDisplay?.linkedin === "text" ||
                 data.linkDisplay?.linkedin === "both") &&
                 data.personal.linkedin}
             </span>
           )}
 
-          {/* GITHUB */}
           {data.personal.github && (
             <span
               style={{
-                fontSize: `${getFontSize("github", "personal")}px`,
-                display: "inline-flex",
+                display: "flex",
                 gap: "3px",
-                alignItems: "center",
+                fontSize: `${getFontSize("github", "personal")}px`,
               }}
             >
               {data.iconVisibility?.github !== false &&
                 data.linkDisplay?.github !== "text" && <Github size={10} />}
-
               {(data.linkDisplay?.github === "text" ||
                 data.linkDisplay?.github === "both") &&
                 data.personal.github}
             </span>
           )}
 
-          {/* CUSTOM PERSONAL FIELDS */}
+          {/* Custom personal fields */}
           {Object.entries(data.personal)
             .filter(
               ([key]) =>
@@ -750,9 +759,9 @@ export default function ResumePreview({ data }: any) {
               <span
                 key={key}
                 style={{
-                  fontSize: `${getFontSize(key, "personal")}px`,
-                  display: "inline-flex",
+                  display: "flex",
                   gap: "3px",
+                  fontSize: `${getFontSize(key, "personal")}px`,
                 }}
               >
                 <strong>{key}:</strong> {value}
@@ -765,12 +774,11 @@ export default function ResumePreview({ data }: any) {
       <hr
         style={{
           margin: "4px 0",
-          border: "none",
           borderTop: "1.2px solid #222",
         }}
       />
 
-      {/* CONTENT */}
+      {/* SECTIONS */}
       {sectionOrder
         .filter((section: string) => section !== "personal")
         .map((section: string) => (

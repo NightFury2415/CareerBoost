@@ -143,6 +143,11 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
       ...prev,
       iconVisibility: { ...defaultIconVisibility, ...prev.iconVisibility },
       linkDisplay: { ...defaultLinkDisplay, ...prev.linkDisplay },
+      dateLayout: {
+        experience: prev.dateLayout?.experience || "right",
+        projects: prev.dateLayout?.projects || "right",
+        education: prev.dateLayout?.education || "right",
+      },
     }));
   }, []);
 
@@ -1202,6 +1207,28 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
               >
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-bold text-white">Experience {idx + 1}</h3>
+                  <Select
+                    onValueChange={(val) =>
+                      setResumeData({
+                        ...resumeData,
+                        dateLayout: {
+                          ...resumeData.dateLayout,
+                          experience: val,
+                        },
+                      })
+                    }
+                    defaultValue={resumeData.dateLayout?.experience || "right"}
+                  >
+                    <SelectTrigger className="w-40 bg-slate-700 border-slate-600 text-white">
+                      <SelectValue placeholder="Date Alignment" />
+                    </SelectTrigger>
+
+                    <SelectContent className="bg-slate-800 text-white">
+                      <SelectItem value="left">Left</SelectItem>
+                      <SelectItem value="center">Center</SelectItem>
+                      <SelectItem value="right">Right</SelectItem>
+                    </SelectContent>
+                  </Select>
 
                   <div className="flex gap-2">
                     <Select
@@ -1505,6 +1532,26 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
               <h3 className="text-lg font-bold text-white">Projects</h3>
 
               <Select
+                onValueChange={(val) =>
+                  setResumeData({
+                    ...resumeData,
+                    dateLayout: { ...resumeData.dateLayout, projects: val },
+                  })
+                }
+                defaultValue={resumeData.dateLayout?.projects || "right"}
+              >
+                <SelectTrigger className="w-40 bg-slate-700 border-slate-600 text-white">
+                  <SelectValue placeholder="Date Alignment" />
+                </SelectTrigger>
+
+                <SelectContent className="bg-slate-800 text-white">
+                  <SelectItem value="left">Left</SelectItem>
+                  <SelectItem value="center">Center</SelectItem>
+                  <SelectItem value="right">Right</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select
                 onValueChange={(size) =>
                   setResumeData({ ...resumeData, projectsFontSize: size })
                 }
@@ -1783,6 +1830,26 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
           <TabsContent value="education" className="space-y-4 mt-4">
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-lg font-bold text-white">Education</h3>
+
+              <Select
+                onValueChange={(val) =>
+                  setResumeData({
+                    ...resumeData,
+                    dateLayout: { ...resumeData.dateLayout, education: val },
+                  })
+                }
+                defaultValue={resumeData.dateLayout?.education || "right"}
+              >
+                <SelectTrigger className="w-40 bg-slate-700 border-slate-600 text-white">
+                  <SelectValue placeholder="Date Alignment" />
+                </SelectTrigger>
+
+                <SelectContent className="bg-slate-800 text-white">
+                  <SelectItem value="left">Left</SelectItem>
+                  <SelectItem value="center">Center</SelectItem>
+                  <SelectItem value="right">Right</SelectItem>
+                </SelectContent>
+              </Select>
 
               <Select
                 onValueChange={(size) =>
