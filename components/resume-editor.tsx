@@ -128,6 +128,12 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
   );
 
   const [activeTab, setActiveTab] = useState("personal");
+  const [customSectionModal, setCustomSectionModal] = useState({
+    open: false,
+    name: "",
+    type: "paragraph",
+  });
+
   const textareaRefs = useRef<{ [key: string]: HTMLTextAreaElement }>({});
   const tabsScrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -302,34 +308,46 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
   };
 
   const addCustomSection = () => {
-    const sectionName = prompt("Enter custom section name:");
-    if (!sectionName) return;
+    setCustomSectionModal({
+      open: true,
+      name: "",
+      type: "paragraph",
+    });
+  };
 
-    if (sectionOrder.includes(sectionName.toLowerCase())) {
-      alert("Section already exists!");
+  const createCustomSection = () => {
+    const { name, type } = customSectionModal;
+    if (!name.trim()) {
+      alert("Section name cannot be empty!");
       return;
     }
 
-    const mode = confirm(
-      "Click OK for Paragraph mode (like Summary)\nClick Cancel for Category mode (like Skills)"
-    );
+    const key = name.toLowerCase().replace(/\s+/g, "-");
 
-    const sectionKey = sectionName.toLowerCase();
-    updateSectionOrder([...sectionOrder, sectionKey]);
+    if (sectionOrder.includes(key)) {
+      alert("A section with this name already exists!");
+      return;
+    }
 
-    if (!mode) {
+    const updatedOrder = [...sectionOrder, key];
+
+    if (type === "paragraph") {
       setResumeData({
         ...resumeData,
-        [sectionKey]: {},
-        sectionOrder: [...sectionOrder, sectionKey],
+        [key]: "",
+        sectionOrder: updatedOrder,
       });
     } else {
       setResumeData({
         ...resumeData,
-        [sectionKey]: "",
-        sectionOrder: [...sectionOrder, sectionKey],
+        [key]: {}, // category mode like Skills
+        sectionOrder: updatedOrder,
       });
     }
+
+    setSectionOrder(updatedOrder);
+    setCustomSectionModal({ open: false, name: "", type: "paragraph" });
+    setActiveTab(key);
   };
 
   // Personal info
@@ -709,836 +727,683 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
   };
 
   return (
-    <div className="space-y-6 w-full max-w-full">
-      <Tabs
-        value={activeTab}
-        onValueChange={setActiveTab}
-        className="w-full max-w-full"
-      >
-        <div className="flex items-center gap-2 w-full max-w-full">
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={() => navigateTabs("left")}
-            disabled={!canNavigateLeft}
-            className="text-white hover:bg-slate-700 flex-shrink-0"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </Button>
+    <>
+      {customSectionModal.open && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-slate-800 border border-slate-700 p-6 rounded-xl w-[26rem] shadow-xl">
+            <h2 className="text-xl font-bold text-white mb-4">
+              Create Custom Section
+            </h2>
 
-          <div
-            ref={tabsScrollContainerRef}
-            className="flex-1 min-w-0 overflow-x-auto rounded-lg shadow-lg shadow-cyan-500/20"
-          >
-            <TabsList className="flex w-max bg-slate-700 text-white h-auto p-1 rounded-lg">
-              {sectionOrder.map((section: string) => (
-                <TabsTrigger
-                  key={section}
-                  value={section}
-                  className={`flex-shrink-0 capitalize py-2 px-4 whitespace-nowrap ${
-                    activeTab === section ? "bg-slate-600" : ""
-                  }`}
-                >
-                  {section === "order" ? (
-                    <>
-                      <Settings2 className="w-4 h-4 mr-1" /> Manage
-                    </>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      {availableSections.find((s) => s.id === section)
-                        ?.icon && (
-                        <span>
-                          {
-                            availableSections.find((s) => s.id === section)
-                              ?.icon
-                          }
-                        </span>
-                      )}
-                      {section}
-                    </div>
-                  )}
-                </TabsTrigger>
-              ))}
+            <label className="text-sm text-gray-300">Section Name</label>
+            <Input
+              value={customSectionModal.name}
+              onChange={(e) =>
+                setCustomSectionModal((prev) => ({
+                  ...prev,
+                  name: e.target.value,
+                }))
+              }
+              className="bg-slate-700 border-slate-600 text-white mt-1 mb-4"
+              placeholder="e.g., Certifications, Coursework, Awards"
+            />
 
-              <TabsTrigger
-                value="order"
-                className={`flex-shrink-0 py-2 px-4 whitespace-nowrap ${
-                  activeTab === "order" ? "bg-slate-600" : ""
-                }`}
-              >
-                <Settings2 className="w-4 h-4 mr-1" /> Manage
-              </TabsTrigger>
-            </TabsList>
-          </div>
+            <label className="text-sm text-gray-300">Section Type</label>
+            <div className="flex gap-4 mt-2 mb-6">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  checked={customSectionModal.type === "paragraph"}
+                  onChange={() =>
+                    setCustomSectionModal((prev) => ({
+                      ...prev,
+                      type: "paragraph",
+                    }))
+                  }
+                />
+                <span>Paragraph</span>
+              </label>
 
-          <Button
-            size="icon"
-            variant="ghost"
-            onClick={() => navigateTabs("right")}
-            disabled={!canNavigateRight}
-            className="text-white hover:bg-slate-700 flex-shrink-0"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </Button>
-        </div>
-
-        {/* ---------------------------- */}
-        {/* ⭐ PERSONAL TAB (FULL UPDATED) */}
-        {/* ---------------------------- */}
-
-        <TabsContent value="personal" className="space-y-4 mt-4">
-          <Card className="bg-slate-800/50 border-slate-700 p-6">
-            <div className="flex justify-between mb-4">
-              <h3 className="text-lg font-bold text-white">Personal Info</h3>
-
-              <Button
-                onClick={addCustomPersonalField}
-                size="sm"
-                className="bg-blue-600 hover:bg-blue-700 gap-2"
-              >
-                <Plus className="w-4 h-4" /> Add Field
-              </Button>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  checked={customSectionModal.type === "category"}
+                  onChange={() =>
+                    setCustomSectionModal((prev) => ({
+                      ...prev,
+                      type: "category",
+                    }))
+                  }
+                />
+                <span>Category</span>
+              </label>
             </div>
 
-            {Object.entries(resumeData.personal).map(([key, value]: any) => (
-              <div key={key} className="mb-3">
-                <label className="text-sm font-semibold text-gray-300 capitalize mb-1 block">
-                  {key.replace(/([A-Z])/g, " $1")}
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="ghost"
+                className="text-gray-300"
+                onClick={() =>
+                  setCustomSectionModal({
+                    open: false,
+                    name: "",
+                    type: "paragraph",
+                  })
+                }
+              >
+                Cancel
+              </Button>
+
+              <Button
+                onClick={createCustomSection}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Create
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-6 w-full max-w-full">
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          className="w-full max-w-full"
+        >
+          <div className="flex items-center gap-2 w-full max-w-full">
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => navigateTabs("left")}
+              disabled={!canNavigateLeft}
+              className="text-white hover:bg-slate-700 flex-shrink-0"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
+
+            <div
+              ref={tabsScrollContainerRef}
+              className="flex-1 min-w-0 overflow-x-auto rounded-lg shadow-lg shadow-cyan-500/20"
+            >
+              <TabsList className="flex w-max bg-slate-700 text-white h-auto p-1 rounded-lg">
+                {sectionOrder.map((section: string) => (
+                  <TabsTrigger
+                    key={section}
+                    value={section}
+                    className={`flex-shrink-0 capitalize py-2 px-4 whitespace-nowrap ${
+                      activeTab === section ? "bg-slate-600" : ""
+                    }`}
+                  >
+                    {section === "order" ? (
+                      <>
+                        <Settings2 className="w-4 h-4 mr-1" /> Manage
+                      </>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        {(() => {
+                          const preset = availableSections.find(
+                            (s) => s.id === section
+                          );
+
+                          // If it's a predefined section, use its icon + label
+                          if (preset) {
+                            return (
+                              <div className="flex items-center gap-2">
+                                <span>{preset.icon}</span>
+                                {preset.label}
+                              </div>
+                            );
+                          }
+
+                          // Otherwise it's a custom section
+                          const prettyName = section
+                            .replace(/-/g, " ")
+                            .replace(/\b\w/g, (c) => c.toUpperCase());
+
+                          return (
+                            <div className="flex items-center gap-2">
+                              <span>🧩</span>{" "}
+                              {/* default custom section icon */}
+                              {prettyName}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+                  </TabsTrigger>
+                ))}
+
+                <TabsTrigger
+                  value="order"
+                  className={`flex-shrink-0 py-2 px-4 whitespace-nowrap ${
+                    activeTab === "order" ? "bg-slate-600" : ""
+                  }`}
+                >
+                  <Settings2 className="w-4 h-4 mr-1" /> Manage
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={() => navigateTabs("right")}
+              disabled={!canNavigateRight}
+              className="text-white hover:bg-slate-700 flex-shrink-0"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </Button>
+          </div>
+
+          {/* ---------------------------- */}
+          {/* ⭐ PERSONAL TAB (FULL UPDATED) */}
+          {/* ---------------------------- */}
+
+          <TabsContent value="personal" className="space-y-4 mt-4">
+            <Card className="bg-slate-800/50 border-slate-700 p-6">
+              <div className="flex justify-between mb-4">
+                <h3 className="text-lg font-bold text-white">Personal Info</h3>
+
+                <Button
+                  onClick={addCustomPersonalField}
+                  size="sm"
+                  className="bg-blue-600 hover:bg-blue-700 gap-2"
+                >
+                  <Plus className="w-4 h-4" /> Add Field
+                </Button>
+              </div>
+
+              {Object.entries(resumeData.personal).map(([key, value]: any) => (
+                <div key={key} className="mb-3">
+                  <label className="text-sm font-semibold text-gray-300 capitalize mb-1 block">
+                    {key.replace(/([A-Z])/g, " $1")}
+                  </label>
+
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      value={value}
+                      onChange={(e) => updatePersonal(key, e.target.value)}
+                      className="bg-slate-700 border-slate-600 text-white flex-1"
+                    />
+
+                    {/* Font size */}
+                    <Select
+                      onValueChange={(size) =>
+                        updatePersonalFontSize(key, size)
+                      }
+                      defaultValue={
+                        resumeData.personalFontSizes?.[key] ||
+                        (key === "name" ? "28" : "10.5")
+                      }
+                    >
+                      <SelectTrigger className="w-20 bg-slate-700 border-slate-600 text-white">
+                        <Type className="w-4 h-4" />
+                      </SelectTrigger>
+
+                      <SelectContent className="bg-slate-800 text-white">
+                        {fontSizes.map((size) => (
+                          <SelectItem key={size.value} value={size.value}>
+                            {size.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    {/* ------------------------------------------------------- */}
+                    {/* ⭐ ADDED — ICON VISIBILITY TOGGLE FOR PERSONAL FIELDS   */}
+                    {/* ------------------------------------------------------- */}
+
+                    {[
+                      "email",
+                      "phone",
+                      "location",
+                      "website",
+                      "linkedin",
+                      "github",
+                    ].includes(key) && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className={`${
+                          resumeData.iconVisibility?.[key]
+                            ? "text-green-400"
+                            : "text-gray-500"
+                        } hover:bg-slate-600`}
+                        onClick={() => toggleIconVisibility(key)}
+                        title="Toggle Icon Visibility"
+                      >
+                        <span className="text-lg">👁</span>
+                      </Button>
+                    )}
+
+                    {/* ------------------------------------------------------- */}
+                    {/* ⭐ ADDED — LINK DISPLAY MODE SELECTOR                  */}
+                    {/* ------------------------------------------------------- */}
+
+                    {["website", "linkedin", "github"].includes(key) && (
+                      <Select
+                        onValueChange={(mode) => updateLinkDisplay(key, mode)}
+                        defaultValue={resumeData.linkDisplay?.[key] || "both"}
+                      >
+                        <SelectTrigger className="w-24 bg-slate-700 border-slate-600 text-white">
+                          <SelectValue />
+                        </SelectTrigger>
+
+                        <SelectContent className="bg-slate-800 text-white">
+                          <SelectItem value="icon">Icon Only</SelectItem>
+                          <SelectItem value="text">Text Only</SelectItem>
+                          <SelectItem value="both">Both</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+
+                    {/* Original delete button */}
+                    {!["name", "email", "phone"].includes(key) && (
+                      <Button
+                        onClick={() => deletePersonalField(key)}
+                        size="icon"
+                        variant="ghost"
+                        className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </Card>
+          </TabsContent>
+          {/* Summary Tab */}
+          <TabsContent value="summary" className="mt-4">
+            <Card className="bg-slate-800/50 border-slate-700 p-6">
+              <div className="flex justify-between mb-2 items-center">
+                <label className="text-sm font-semibold text-gray-300">
+                  Professional Summary
                 </label>
-
-                <div className="flex gap-2 items-center">
-                  <Input
-                    value={value}
-                    onChange={(e) => updatePersonal(key, e.target.value)}
-                    className="bg-slate-700 border-slate-600 text-white flex-1"
-                  />
-
-                  {/* Font size */}
+                <div className="flex gap-1">
                   <Select
-                    onValueChange={(size) => updatePersonalFontSize(key, size)}
-                    defaultValue={
-                      resumeData.personalFontSizes?.[key] ||
-                      (key === "name" ? "28" : "10.5")
+                    onValueChange={(size) =>
+                      setResumeData({ ...resumeData, summaryFontSize: size })
                     }
+                    defaultValue="11"
                   >
                     <SelectTrigger className="w-20 bg-slate-700 border-slate-600 text-white">
                       <Type className="w-4 h-4" />
                     </SelectTrigger>
-
                     <SelectContent className="bg-slate-800 text-white">
                       {fontSizes.map((size) => (
                         <SelectItem key={size.value} value={size.value}>
                           {size.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  {/* ------------------------------------------------------- */}
-                  {/* ⭐ ADDED — ICON VISIBILITY TOGGLE FOR PERSONAL FIELDS   */}
-                  {/* ------------------------------------------------------- */}
-
-                  {[
-                    "email",
-                    "phone",
-                    "location",
-                    "website",
-                    "linkedin",
-                    "github",
-                  ].includes(key) && (
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className={`${
-                        resumeData.iconVisibility?.[key]
-                          ? "text-green-400"
-                          : "text-gray-500"
-                      } hover:bg-slate-600`}
-                      onClick={() => toggleIconVisibility(key)}
-                      title="Toggle Icon Visibility"
-                    >
-                      <span className="text-lg">👁</span>
-                    </Button>
-                  )}
-
-                  {/* ------------------------------------------------------- */}
-                  {/* ⭐ ADDED — LINK DISPLAY MODE SELECTOR                  */}
-                  {/* ------------------------------------------------------- */}
-
-                  {["website", "linkedin", "github"].includes(key) && (
-                    <Select
-                      onValueChange={(mode) => updateLinkDisplay(key, mode)}
-                      defaultValue={resumeData.linkDisplay?.[key] || "both"}
-                    >
-                      <SelectTrigger className="w-24 bg-slate-700 border-slate-600 text-white">
-                        <SelectValue />
-                      </SelectTrigger>
-
-                      <SelectContent className="bg-slate-800 text-white">
-                        <SelectItem value="icon">Icon Only</SelectItem>
-                        <SelectItem value="text">Text Only</SelectItem>
-                        <SelectItem value="both">Both</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-
-                  {/* Original delete button */}
-                  {!["name", "email", "phone"].includes(key) && (
-                    <Button
-                      onClick={() => deletePersonalField(key)}
-                      size="icon"
-                      variant="ghost"
-                      className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </Card>
-        </TabsContent>
-        {/* Summary Tab */}
-        <TabsContent value="summary" className="mt-4">
-          <Card className="bg-slate-800/50 border-slate-700 p-6">
-            <div className="flex justify-between mb-2 items-center">
-              <label className="text-sm font-semibold text-gray-300">
-                Professional Summary
-              </label>
-              <div className="flex gap-1">
-                <Select
-                  onValueChange={(size) =>
-                    setResumeData({ ...resumeData, summaryFontSize: size })
-                  }
-                  defaultValue="11"
-                >
-                  <SelectTrigger className="w-20 bg-slate-700 border-slate-600 text-white">
-                    <Type className="w-4 h-4" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-800 text-white">
-                    {fontSizes.map((size) => (
-                      <SelectItem key={size.value} value={size.value}>
-                        {size.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Button
-                  size="icon"
-                  onClick={() => applySummaryFormatting("bold")}
-                  className="bg-slate-700 hover:bg-slate-600"
-                >
-                  <Bold className="w-4 h-4" />
-                </Button>
-                <Button
-                  size="icon"
-                  onClick={() => applySummaryFormatting("italic")}
-                  className="bg-slate-700 hover:bg-slate-600"
-                >
-                  <Italic className="w-4 h-4" />
-                </Button>
-                <Button
-                  size="icon"
-                  onClick={() => applySummaryFormatting("underline")}
-                  className="bg-slate-700 hover:bg-slate-600"
-                >
-                  <Underline className="w-4 h-4" />
-                </Button>
-
-                <Select
-                  onValueChange={(color) =>
-                    applySummaryFormatting("color", color)
-                  }
-                >
-                  <SelectTrigger className="w-10 h-10 bg-slate-700 hover:bg-slate-600 border-slate-600">
-                    <Palette className="w-4 h-4" />
-                  </SelectTrigger>
-
-                  <SelectContent className="bg-slate-800 text-white">
-                    {textColors.map((color) => (
-                      <SelectItem key={color.value} value={color.value}>
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="w-4 h-4 rounded"
-                            style={{ backgroundColor: color.value }}
-                          />
-                          {color.label}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <Textarea
-              ref={(el) => {
-                if (el) textareaRefs.current["summary"] = el;
-              }}
-              value={resumeData.summary}
-              onChange={(e) => updateSummary(e.target.value)}
-              className="bg-slate-700 border-slate-600 text-white mt-2 min-h-32"
-            />
-            <p className="text-xs text-gray-400 mt-2">
-              Tip: Select text and use formatting buttons
-            </p>
-          </Card>
-        </TabsContent>
-
-        {/* Skills Tab */}
-        <TabsContent value="skills" className="space-y-4 mt-4">
-          <Card className="bg-slate-800/50 border-slate-700 p-6">
-            <div className="flex justify-between mb-4">
-              <h3 className="text-lg font-bold text-white">Skills</h3>
-
-              <div className="flex gap-2">
-                <Select
-                  onValueChange={(size) =>
-                    setResumeData({ ...resumeData, skillsFontSize: size })
-                  }
-                  defaultValue="11"
-                >
-                  <SelectTrigger className="w-32 bg-slate-700 border-slate-600 text-white">
-                    <Type className="w-4 h-4 mr-2" />
-                    <SelectValue />
-                  </SelectTrigger>
-
-                  <SelectContent className="bg-slate-800 text-white">
-                    {fontSizes.map((size) => (
-                      <SelectItem key={size.value} value={size.value}>
-                        {size.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Button
-                  onClick={addSkillCategory}
-                  size="sm"
-                  className="bg-blue-600 hover:bg-blue-700 gap-2"
-                >
-                  <Plus className="w-4 h-4" /> Add Category
-                </Button>
-              </div>
-            </div>
-
-            {Object.entries(resumeData.skills || {}).map(
-              ([category, skills]: any) => (
-                <div key={category} className="mb-3">
-                  <div className="flex justify-between items-center">
-                    <label className="text-sm font-semibold text-gray-300 capitalize">
-                      {category}
-                    </label>
-
-                    <Button
-                      onClick={() => deleteSkillCategory(category)}
-                      size="icon"
-                      variant="ghost"
-                      className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-
-                  <Input
-                    value={skills.join(", ")}
-                    onChange={(e) => updateSkills(category, e.target.value)}
-                    className="bg-slate-700 border-slate-600 text-white mt-1"
-                    placeholder="Separate with commas"
-                  />
-                </div>
-              )
-            )}
-          </Card>
-        </TabsContent>
-
-        {/* Experience Tab */}
-        <TabsContent value="experience" className="space-y-4 mt-4">
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="text-lg font-bold text-white">Experience</h3>
-
-            <Select
-              onValueChange={(size) =>
-                setResumeData({ ...resumeData, experienceFontSize: size })
-              }
-              defaultValue="11"
-            >
-              <SelectTrigger className="w-32 bg-slate-700 border-slate-600 text-white">
-                <Type className="w-4 h-4 mr-2" />
-                <SelectValue />
-              </SelectTrigger>
-
-              <SelectContent className="bg-slate-800 text-white">
-                {fontSizes.map((size) => (
-                  <SelectItem key={size.value} value={size.value}>
-                    {size.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {(resumeData.experience || []).map((exp: any, idx: number) => (
-            <Card key={exp.id} className="bg-slate-800/50 border-slate-700 p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-bold text-white">Experience {idx + 1}</h3>
-
-                <div className="flex gap-2">
-                  <Select
-                    value={exp.bulletStyle || "•"}
-                    onValueChange={(val) =>
-                      updateExperience(exp.id, "bulletStyle", val)
-                    }
-                  >
-                    <SelectTrigger className="w-36 bg-slate-700 border-slate-600 text-white">
-                      <List className="w-4 h-4 mr-2" />
-                      <SelectValue />
-                    </SelectTrigger>
-
-                    <SelectContent className="bg-slate-800 text-white">
-                      {bulletStyles.map((style) => (
-                        <SelectItem key={style.value} value={style.value}>
-                          {style.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
 
                   <Button
-                    onClick={() => deleteExperience(exp.id)}
                     size="icon"
-                    variant="ghost"
-                    className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                    onClick={() => applySummaryFormatting("bold")}
+                    className="bg-slate-700 hover:bg-slate-600"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Bold className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    onClick={() => applySummaryFormatting("italic")}
+                    className="bg-slate-700 hover:bg-slate-600"
+                  >
+                    <Italic className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    onClick={() => applySummaryFormatting("underline")}
+                    className="bg-slate-700 hover:bg-slate-600"
+                  >
+                    <Underline className="w-4 h-4" />
+                  </Button>
+
+                  <Select
+                    onValueChange={(color) =>
+                      applySummaryFormatting("color", color)
+                    }
+                  >
+                    <SelectTrigger className="w-10 h-10 bg-slate-700 hover:bg-slate-600 border-slate-600">
+                      <Palette className="w-4 h-4" />
+                    </SelectTrigger>
+
+                    <SelectContent className="bg-slate-800 text-white">
+                      {textColors.map((color) => (
+                        <SelectItem key={color.value} value={color.value}>
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-4 h-4 rounded"
+                              style={{ backgroundColor: color.value }}
+                            />
+                            {color.label}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <Textarea
+                ref={(el) => {
+                  if (el) textareaRefs.current["summary"] = el;
+                }}
+                value={resumeData.summary}
+                onChange={(e) => updateSummary(e.target.value)}
+                className="bg-slate-700 border-slate-600 text-white mt-2 min-h-32"
+              />
+              <p className="text-xs text-gray-400 mt-2">
+                Tip: Select text and use formatting buttons
+              </p>
+            </Card>
+          </TabsContent>
+
+          {/* Skills Tab */}
+          <TabsContent value="skills" className="space-y-4 mt-4">
+            <Card className="bg-slate-800/50 border-slate-700 p-6">
+              <div className="flex justify-between mb-4">
+                <h3 className="text-lg font-bold text-white">Skills</h3>
+
+                <div className="flex gap-2">
+                  <Select
+                    onValueChange={(size) =>
+                      setResumeData({ ...resumeData, skillsFontSize: size })
+                    }
+                    defaultValue="11"
+                  >
+                    <SelectTrigger className="w-32 bg-slate-700 border-slate-600 text-white">
+                      <Type className="w-4 h-4 mr-2" />
+                      <SelectValue />
+                    </SelectTrigger>
+
+                    <SelectContent className="bg-slate-800 text-white">
+                      {fontSizes.map((size) => (
+                        <SelectItem key={size.value} value={size.value}>
+                          {size.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Button
+                    onClick={addSkillCategory}
+                    size="sm"
+                    className="bg-blue-600 hover:bg-blue-700 gap-2"
+                  >
+                    <Plus className="w-4 h-4" /> Add Category
                   </Button>
                 </div>
               </div>
 
-              <div className="space-y-3">
-                {/* TITLE */}
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Job Title"
-                    value={exp.position}
-                    onChange={(e) =>
-                      updateExperience(exp.id, "position", e.target.value)
-                    }
-                    className="bg-slate-700 border-slate-600 text-white flex-1"
-                  />
-
-                  <Select
-                    onValueChange={(size) =>
-                      updateExperienceFieldFontSize(exp.id, "position", size)
-                    }
-                    defaultValue="11"
-                  >
-                    <SelectTrigger className="w-20 bg-slate-700 border-slate-600 text-white">
-                      <Type className="w-4 h-4" />
-                    </SelectTrigger>
-
-                    <SelectContent className="bg-slate-800 text-white">
-                      {fontSizes.map((size) => (
-                        <SelectItem key={size.value} value={size.value}>
-                          {size.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* COMPANY */}
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Company"
-                    value={exp.company}
-                    onChange={(e) =>
-                      updateExperience(exp.id, "company", e.target.value)
-                    }
-                    className="bg-slate-700 border-slate-600 text-white flex-1"
-                  />
-
-                  <Select
-                    onValueChange={(size) =>
-                      updateExperienceFieldFontSize(exp.id, "company", size)
-                    }
-                    defaultValue="11"
-                  >
-                    <SelectTrigger className="w-20 bg-slate-700 border-slate-600 text-white">
-                      <Type className="w-4 h-4" />
-                    </SelectTrigger>
-
-                    <SelectContent className="bg-slate-800 text-white">
-                      {fontSizes.map((size) => (
-                        <SelectItem key={size.value} value={size.value}>
-                          {size.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* LOCATION */}
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Location"
-                    value={exp.location}
-                    onChange={(e) =>
-                      updateExperience(exp.id, "location", e.target.value)
-                    }
-                    className="bg-slate-700 border-slate-600 text-white flex-1"
-                  />
-
-                  <Select
-                    onValueChange={(size) =>
-                      updateExperienceFieldFontSize(exp.id, "location", size)
-                    }
-                    defaultValue="11"
-                  >
-                    <SelectTrigger className="w-20 bg-slate-700 border-slate-600 text-white">
-                      <Type className="w-4 h-4" />
-                    </SelectTrigger>
-
-                    <SelectContent className="bg-slate-800 text-white">
-                      {fontSizes.map((size) => (
-                        <SelectItem key={size.value} value={size.value}>
-                          {size.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* DATES */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Start Date"
-                      value={exp.startDate}
-                      onChange={(e) =>
-                        updateExperience(exp.id, "startDate", e.target.value)
-                      }
-                      className="bg-slate-700 border-slate-600 text-white flex-1"
-                    />
-
-                    <Select
-                      onValueChange={(size) =>
-                        updateExperienceFieldFontSize(exp.id, "startDate", size)
-                      }
-                      defaultValue="11"
-                    >
-                      <SelectTrigger className="w-16 bg-slate-700 border-slate-600 text-white">
-                        <Type className="w-4 h-4" />
-                      </SelectTrigger>
-
-                      <SelectContent className="bg-slate-800 text-white">
-                        {fontSizes.map((size) => (
-                          <SelectItem key={size.value} value={size.value}>
-                            {size.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="End Date"
-                      value={exp.endDate}
-                      onChange={(e) =>
-                        updateExperience(exp.id, "endDate", e.target.value)
-                      }
-                      className="bg-slate-700 border-slate-600 text-white flex-1"
-                    />
-
-                    <Select
-                      onValueChange={(size) =>
-                        updateExperienceFieldFontSize(exp.id, "endDate", size)
-                      }
-                      defaultValue="11"
-                    >
-                      <SelectTrigger className="w-16 bg-slate-700 border-slate-600 text-white">
-                        <Type className="w-4 h-4" />
-                      </SelectTrigger>
-
-                      <SelectContent className="bg-slate-800 text-white">
-                        {fontSizes.map((size) => (
-                          <SelectItem key={size.value} value={size.value}>
-                            {size.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* BULLETS */}
-                {exp.bullets.map((bullet: string, bIdx: number) => (
-                  <div key={bIdx} className="mb-2">
-                    <div className="flex gap-1 mb-1 items-center">
-                      <Button
-                        size="icon"
-                        onClick={() =>
-                          applyBulletFormatting(exp.id, bIdx, "bold")
-                        }
-                        className="bg-slate-700 hover:bg-slate-600 h-8 w-8"
-                      >
-                        <Bold className="w-3 h-3" />
-                      </Button>
+              {Object.entries(resumeData.skills || {}).map(
+                ([category, skills]: any) => (
+                  <div key={category} className="mb-3">
+                    <div className="flex justify-between items-center">
+                      <label className="text-sm font-semibold text-gray-300 capitalize">
+                        {category}
+                      </label>
 
                       <Button
-                        size="icon"
-                        onClick={() =>
-                          applyBulletFormatting(exp.id, bIdx, "italic")
-                        }
-                        className="bg-slate-700 hover:bg-slate-600 h-8 w-8"
-                      >
-                        <Italic className="w-3 h-3" />
-                      </Button>
-
-                      <Button
-                        size="icon"
-                        onClick={() =>
-                          applyBulletFormatting(exp.id, bIdx, "underline")
-                        }
-                        className="bg-slate-700 hover:bg-slate-600 h-8 w-8"
-                      >
-                        <Underline className="w-3 h-3" />
-                      </Button>
-
-                      <Select
-                        onValueChange={(color) =>
-                          applyBulletFormatting(exp.id, bIdx, "color", color)
-                        }
-                      >
-                        <SelectTrigger className="w-8 h-8 bg-slate-700 hover:bg-slate-600 border-slate-600 p-0">
-                          <Palette className="w-3 h-3 mx-auto" />
-                        </SelectTrigger>
-
-                        <SelectContent className="bg-slate-800 text-white">
-                          {textColors.map((color) => (
-                            <SelectItem key={color.value} value={color.value}>
-                              <div className="flex items-center gap-2">
-                                <div
-                                  className="w-4 h-4 rounded"
-                                  style={{ backgroundColor: color.value }}
-                                />
-                                {color.label}
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-
-                      <Button
+                        onClick={() => deleteSkillCategory(category)}
                         size="icon"
                         variant="ghost"
-                        onClick={() => deleteBullet(exp.id, bIdx)}
-                        className="text-red-400 hover:text-red-300 hover:bg-red-900/20 h-8 w-8 ml-auto"
+                        className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
                       >
                         <X className="w-4 h-4" />
                       </Button>
                     </div>
 
-                    <Textarea
-                      ref={(el) => {
-                        if (el)
-                          textareaRefs.current[`bullet-${exp.id}-${bIdx}`] = el;
-                      }}
-                      value={bullet}
-                      onChange={(e) =>
-                        updateBullet(exp.id, bIdx, e.target.value)
-                      }
-                      className="bg-slate-700 border-slate-600 text-white"
-                      placeholder="Describe your responsibility..."
+                    <Input
+                      value={skills.join(", ")}
+                      onChange={(e) => updateSkills(category, e.target.value)}
+                      className="bg-slate-700 border-slate-600 text-white mt-1"
+                      placeholder="Separate with commas"
                     />
                   </div>
-                ))}
-
-                <Button
-                  onClick={() => addBullet(exp.id)}
-                  size="sm"
-                  className="bg-blue-600 hover:bg-blue-700 w-full mt-2"
-                >
-                  <Plus className="w-4 h-4" /> Add Bullet
-                </Button>
-              </div>
+                )
+              )}
             </Card>
-          ))}
+          </TabsContent>
 
-          <Button
-            onClick={addExperience}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white gap-2"
-          >
-            <Plus className="w-4 h-4" /> Add Experience
-          </Button>
-        </TabsContent>
+          {/* Experience Tab */}
+          <TabsContent value="experience" className="space-y-4 mt-4">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-lg font-bold text-white">Experience</h3>
 
-        {/* Projects Tab */}
-        <TabsContent value="projects" className="space-y-4 mt-4">
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="text-lg font-bold text-white">Projects</h3>
+              <Select
+                onValueChange={(size) =>
+                  setResumeData({ ...resumeData, experienceFontSize: size })
+                }
+                defaultValue="11"
+              >
+                <SelectTrigger className="w-32 bg-slate-700 border-slate-600 text-white">
+                  <Type className="w-4 h-4 mr-2" />
+                  <SelectValue />
+                </SelectTrigger>
 
-            <Select
-              onValueChange={(size) =>
-                setResumeData({ ...resumeData, projectsFontSize: size })
-              }
-              defaultValue="11"
-            >
-              <SelectTrigger className="w-32 bg-slate-700 border-slate-600 text-white">
-                <Type className="w-4 h-4 mr-2" />
-                <SelectValue />
-              </SelectTrigger>
+                <SelectContent className="bg-slate-800 text-white">
+                  {fontSizes.map((size) => (
+                    <SelectItem key={size.value} value={size.value}>
+                      {size.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-              <SelectContent className="bg-slate-800 text-white">
-                {fontSizes.map((size) => (
-                  <SelectItem key={size.value} value={size.value}>
-                    {size.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+            {(resumeData.experience || []).map((exp: any, idx: number) => (
+              <Card
+                key={exp.id}
+                className="bg-slate-800/50 border-slate-700 p-6"
+              >
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-bold text-white">Experience {idx + 1}</h3>
 
-          {(resumeData.projects || []).map((proj: any, idx: number) => (
-            <Card
-              key={proj.id}
-              className="bg-slate-800/50 border-slate-700 p-6"
-            >
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-white font-bold">Project {idx + 1}</h3>
+                  <div className="flex gap-2">
+                    <Select
+                      value={exp.bulletStyle || "•"}
+                      onValueChange={(val) =>
+                        updateExperience(exp.id, "bulletStyle", val)
+                      }
+                    >
+                      <SelectTrigger className="w-36 bg-slate-700 border-slate-600 text-white">
+                        <List className="w-4 h-4 mr-2" />
+                        <SelectValue />
+                      </SelectTrigger>
 
-                <div className="flex gap-2">
-                  <Select
-                    value={proj.bulletStyle || "•"}
-                    onValueChange={(val) =>
-                      updateProject(proj.id, "bulletStyle", val)
-                    }
-                  >
-                    <SelectTrigger className="w-36 bg-slate-700 border-slate-600 text-white">
-                      <List className="w-4 h-4 mr-2" />
-                      <SelectValue />
-                    </SelectTrigger>
+                      <SelectContent className="bg-slate-800 text-white">
+                        {bulletStyles.map((style) => (
+                          <SelectItem key={style.value} value={style.value}>
+                            {style.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
 
-                    <SelectContent className="bg-slate-800 text-white">
-                      {bulletStyles.map((style) => (
-                        <SelectItem key={style.value} value={style.value}>
-                          {style.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  <Button
-                    onClick={() => deleteProject(proj.id)}
-                    size="icon"
-                    variant="ghost"
-                    className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Project Title"
-                    value={proj.title}
-                    onChange={(e) =>
-                      updateProject(proj.id, "title", e.target.value)
-                    }
-                    className="bg-slate-700 border-slate-600 text-white flex-1"
-                  />
-
-                  <Select
-                    onValueChange={(size) =>
-                      updateProjectFieldFontSize(proj.id, "title", size)
-                    }
-                    defaultValue="11"
-                  >
-                    <SelectTrigger className="w-20 bg-slate-700 border-slate-600 text-white">
-                      <Type className="w-4 h-4" />
-                    </SelectTrigger>
-
-                    <SelectContent className="bg-slate-800 text-white">
-                      {fontSizes.map((size) => (
-                        <SelectItem key={size.value} value={size.value}>
-                          {size.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    <Button
+                      onClick={() => deleteExperience(exp.id)}
+                      size="icon"
+                      variant="ghost"
+                      className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
 
-                <Input
-                  placeholder="Technologies (comma separated)"
-                  value={proj.technologies?.join(", ") || ""}
-                  onChange={(e) =>
-                    updateProject(
-                      proj.id,
-                      "technologies",
-                      e.target.value
-                        .split(",")
-                        .map((t: string) => t.trim())
-                        .filter(Boolean)
-                    )
-                  }
-                  className="bg-slate-700 border-slate-600 text-white"
-                />
+                <div className="space-y-3">
+                  {/* TITLE */}
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Job Title"
+                      value={exp.position}
+                      onChange={(e) =>
+                        updateExperience(exp.id, "position", e.target.value)
+                      }
+                      className="bg-slate-700 border-slate-600 text-white flex-1"
+                    />
 
-                <Select
-                  value={proj.type}
-                  onValueChange={(val) => updateProject(proj.id, "type", val)}
-                >
-                  <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
-                    <SelectValue placeholder="Project Type" />
-                  </SelectTrigger>
+                    <Select
+                      onValueChange={(size) =>
+                        updateExperienceFieldFontSize(exp.id, "position", size)
+                      }
+                      defaultValue="11"
+                    >
+                      <SelectTrigger className="w-20 bg-slate-700 border-slate-600 text-white">
+                        <Type className="w-4 h-4" />
+                      </SelectTrigger>
 
-                  <SelectContent className="bg-slate-800 text-white">
-                    <SelectItem value="Personal">Personal</SelectItem>
-                    <SelectItem value="Academic">Academic</SelectItem>
-                    <SelectItem value="Professional">Professional</SelectItem>
-                    <SelectItem value="Open Source">Open Source</SelectItem>
-                  </SelectContent>
-                </Select>
+                      <SelectContent className="bg-slate-800 text-white">
+                        {fontSizes.map((size) => (
+                          <SelectItem key={size.value} value={size.value}>
+                            {size.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                <Textarea
-                  placeholder="Description"
-                  value={proj.description}
-                  onChange={(e) =>
-                    updateProject(proj.id, "description", e.target.value)
-                  }
-                  className="bg-slate-700 border-slate-600 text-white"
-                />
+                  {/* COMPANY */}
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Company"
+                      value={exp.company}
+                      onChange={(e) =>
+                        updateExperience(exp.id, "company", e.target.value)
+                      }
+                      className="bg-slate-700 border-slate-600 text-white flex-1"
+                    />
 
-                <Textarea
-                  placeholder="Impact / Results"
-                  value={proj.impact}
-                  onChange={(e) =>
-                    updateProject(proj.id, "impact", e.target.value)
-                  }
-                  className="bg-slate-700 border-slate-600 text-white"
-                />
+                    <Select
+                      onValueChange={(size) =>
+                        updateExperienceFieldFontSize(exp.id, "company", size)
+                      }
+                      defaultValue="11"
+                    >
+                      <SelectTrigger className="w-20 bg-slate-700 border-slate-600 text-white">
+                        <Type className="w-4 h-4" />
+                      </SelectTrigger>
 
-                <Input
-                  placeholder="Project Link"
-                  value={proj.link}
-                  onChange={(e) =>
-                    updateProject(proj.id, "link", e.target.value)
-                  }
-                  className="bg-slate-700 border-slate-600 text-white"
-                />
+                      <SelectContent className="bg-slate-800 text-white">
+                        {fontSizes.map((size) => (
+                          <SelectItem key={size.value} value={size.value}>
+                            {size.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                {proj.bullets &&
-                  proj.bullets.map((bullet: string, bIdx: number) => (
+                  {/* LOCATION */}
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Location"
+                      value={exp.location}
+                      onChange={(e) =>
+                        updateExperience(exp.id, "location", e.target.value)
+                      }
+                      className="bg-slate-700 border-slate-600 text-white flex-1"
+                    />
+
+                    <Select
+                      onValueChange={(size) =>
+                        updateExperienceFieldFontSize(exp.id, "location", size)
+                      }
+                      defaultValue="11"
+                    >
+                      <SelectTrigger className="w-20 bg-slate-700 border-slate-600 text-white">
+                        <Type className="w-4 h-4" />
+                      </SelectTrigger>
+
+                      <SelectContent className="bg-slate-800 text-white">
+                        {fontSizes.map((size) => (
+                          <SelectItem key={size.value} value={size.value}>
+                            {size.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* DATES */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Start Date"
+                        value={exp.startDate}
+                        onChange={(e) =>
+                          updateExperience(exp.id, "startDate", e.target.value)
+                        }
+                        className="bg-slate-700 border-slate-600 text-white flex-1"
+                      />
+
+                      <Select
+                        onValueChange={(size) =>
+                          updateExperienceFieldFontSize(
+                            exp.id,
+                            "startDate",
+                            size
+                          )
+                        }
+                        defaultValue="11"
+                      >
+                        <SelectTrigger className="w-16 bg-slate-700 border-slate-600 text-white">
+                          <Type className="w-4 h-4" />
+                        </SelectTrigger>
+
+                        <SelectContent className="bg-slate-800 text-white">
+                          {fontSizes.map((size) => (
+                            <SelectItem key={size.value} value={size.value}>
+                              {size.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="End Date"
+                        value={exp.endDate}
+                        onChange={(e) =>
+                          updateExperience(exp.id, "endDate", e.target.value)
+                        }
+                        className="bg-slate-700 border-slate-600 text-white flex-1"
+                      />
+
+                      <Select
+                        onValueChange={(size) =>
+                          updateExperienceFieldFontSize(exp.id, "endDate", size)
+                        }
+                        defaultValue="11"
+                      >
+                        <SelectTrigger className="w-16 bg-slate-700 border-slate-600 text-white">
+                          <Type className="w-4 h-4" />
+                        </SelectTrigger>
+
+                        <SelectContent className="bg-slate-800 text-white">
+                          {fontSizes.map((size) => (
+                            <SelectItem key={size.value} value={size.value}>
+                              {size.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* BULLETS */}
+                  {exp.bullets.map((bullet: string, bIdx: number) => (
                     <div key={bIdx} className="mb-2">
                       <div className="flex gap-1 mb-1 items-center">
                         <Button
                           size="icon"
                           onClick={() =>
-                            applyProjectBulletFormatting(proj.id, bIdx, "bold")
+                            applyBulletFormatting(exp.id, bIdx, "bold")
                           }
                           className="bg-slate-700 hover:bg-slate-600 h-8 w-8"
                         >
@@ -1548,11 +1413,7 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                         <Button
                           size="icon"
                           onClick={() =>
-                            applyProjectBulletFormatting(
-                              proj.id,
-                              bIdx,
-                              "italic"
-                            )
+                            applyBulletFormatting(exp.id, bIdx, "italic")
                           }
                           className="bg-slate-700 hover:bg-slate-600 h-8 w-8"
                         >
@@ -1562,11 +1423,7 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                         <Button
                           size="icon"
                           onClick={() =>
-                            applyProjectBulletFormatting(
-                              proj.id,
-                              bIdx,
-                              "underline"
-                            )
+                            applyBulletFormatting(exp.id, bIdx, "underline")
                           }
                           className="bg-slate-700 hover:bg-slate-600 h-8 w-8"
                         >
@@ -1575,12 +1432,7 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
 
                         <Select
                           onValueChange={(color) =>
-                            applyProjectBulletFormatting(
-                              proj.id,
-                              bIdx,
-                              "color",
-                              color
-                            )
+                            applyBulletFormatting(exp.id, bIdx, "color", color)
                           }
                         >
                           <SelectTrigger className="w-8 h-8 bg-slate-700 hover:bg-slate-600 border-slate-600 p-0">
@@ -1605,7 +1457,7 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                         <Button
                           size="icon"
                           variant="ghost"
-                          onClick={() => deleteProjectBullet(proj.id, bIdx)}
+                          onClick={() => deleteBullet(exp.id, bIdx)}
                           className="text-red-400 hover:text-red-300 hover:bg-red-900/20 h-8 w-8 ml-auto"
                         >
                           <X className="w-4 h-4" />
@@ -1615,324 +1467,721 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                       <Textarea
                         ref={(el) => {
                           if (el)
-                            textareaRefs.current[
-                              `proj-bullet-${proj.id}-${bIdx}`
-                            ] = el;
+                            textareaRefs.current[`bullet-${exp.id}-${bIdx}`] =
+                              el;
                         }}
                         value={bullet}
                         onChange={(e) =>
-                          updateProjectBullet(proj.id, bIdx, e.target.value)
+                          updateBullet(exp.id, bIdx, e.target.value)
                         }
                         className="bg-slate-700 border-slate-600 text-white"
-                        placeholder="Describe project highlight..."
+                        placeholder="Describe your responsibility..."
                       />
                     </div>
                   ))}
 
-                <Button
-                  onClick={() => addProjectBullet(proj.id)}
-                  size="sm"
-                  className="bg-blue-600 hover:bg-blue-700 w-full mt-2"
-                >
-                  <Plus className="w-4 h-4" /> Add Bullet Point
-                </Button>
-              </div>
-            </Card>
-          ))}
+                  <Button
+                    onClick={() => addBullet(exp.id)}
+                    size="sm"
+                    className="bg-blue-600 hover:bg-blue-700 w-full mt-2"
+                  >
+                    <Plus className="w-4 h-4" /> Add Bullet
+                  </Button>
+                </div>
+              </Card>
+            ))}
 
-          <Button
-            onClick={addProject}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white gap-2"
-          >
-            <Plus className="w-4 h-4" /> Add Project
-          </Button>
-        </TabsContent>
-
-        {/* Education Tab */}
-        <TabsContent value="education" className="space-y-4 mt-4">
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="text-lg font-bold text-white">Education</h3>
-
-            <Select
-              onValueChange={(size) =>
-                setResumeData({ ...resumeData, educationFontSize: size })
-              }
-              defaultValue="11"
+            <Button
+              onClick={addExperience}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white gap-2"
             >
-              <SelectTrigger className="w-32 bg-slate-700 border-slate-600 text-white">
-                <Type className="w-4 h-4 mr-2" />
-                <SelectValue />
-              </SelectTrigger>
+              <Plus className="w-4 h-4" /> Add Experience
+            </Button>
+          </TabsContent>
 
-              <SelectContent className="bg-slate-800 text-white">
-                {fontSizes.map((size) => (
-                  <SelectItem key={size.value} value={size.value}>
-                    {size.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Projects Tab */}
+          <TabsContent value="projects" className="space-y-4 mt-4">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-lg font-bold text-white">Projects</h3>
 
-          {(resumeData.education || []).map((edu: any, idx: number) => (
-            <Card key={edu.id} className="bg-slate-800/50 border-slate-700 p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-white font-bold">Education {idx + 1}</h3>
-
-                <Button
-                  onClick={() => deleteEducation(edu.id)}
-                  size="icon"
-                  variant="ghost"
-                  className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="University / Institution"
-                    value={edu.school}
-                    onChange={(e) =>
-                      updateEducation(edu.id, "school", e.target.value)
-                    }
-                    className="bg-slate-700 border-slate-600 text-white flex-1"
-                  />
-
-                  <Select
-                    onValueChange={(size) =>
-                      updateEducationFieldFontSize(edu.id, "school", size)
-                    }
-                    defaultValue="11"
-                  >
-                    <SelectTrigger className="w-20 bg-slate-700 border-slate-600 text-white">
-                      <Type className="w-4 h-4" />
-                    </SelectTrigger>
-
-                    <SelectContent className="bg-slate-800 text-white">
-                      {fontSizes.map((size) => (
-                        <SelectItem key={size.value} value={size.value}>
-                          {size.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Degree"
-                    value={edu.degree}
-                    onChange={(e) =>
-                      updateEducation(edu.id, "degree", e.target.value)
-                    }
-                    className="bg-slate-700 border-slate-600 text-white flex-1"
-                  />
-
-                  <Select
-                    onValueChange={(size) =>
-                      updateEducationFieldFontSize(edu.id, "degree", size)
-                    }
-                    defaultValue="11"
-                  >
-                    <SelectTrigger className="w-20 bg-slate-700 border-slate-600 text-white">
-                      <Type className="w-4 h-4" />
-                    </SelectTrigger>
-
-                    <SelectContent className="bg-slate-800 text-white">
-                      {fontSizes.map((size) => (
-                        <SelectItem key={size.value} value={size.value}>
-                          {size.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <Input
-                  placeholder="Minor / Specialization"
-                  value={edu.minor}
-                  onChange={(e) =>
-                    updateEducation(edu.id, "minor", e.target.value)
-                  }
-                  className="bg-slate-700 border-slate-600 text-white"
-                />
-
-                <Input
-                  placeholder="Location"
-                  value={edu.location}
-                  onChange={(e) =>
-                    updateEducation(edu.id, "location", e.target.value)
-                  }
-                  className="bg-slate-700 border-slate-600 text-white"
-                />
-
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Graduation Date"
-                    value={edu.graduationDate}
-                    onChange={(e) =>
-                      updateEducation(edu.id, "graduationDate", e.target.value)
-                    }
-                    className="bg-slate-700 border-slate-600 text-white flex-1"
-                  />
-
-                  <Select
-                    onValueChange={(size) =>
-                      updateEducationFieldFontSize(
-                        edu.id,
-                        "graduationDate",
-                        size
-                      )
-                    }
-                    defaultValue="11"
-                  >
-                    <SelectTrigger className="w-20 bg-slate-700 border-slate-600 text-white">
-                      <Type className="w-4 h-4" />
-                    </SelectTrigger>
-
-                    <SelectContent className="bg-slate-800 text-white">
-                      {fontSizes.map((size) => (
-                        <SelectItem key={size.value} value={size.value}>
-                          {size.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <Input
-                  placeholder="GPA"
-                  value={edu.gpa}
-                  onChange={(e) =>
-                    updateEducation(edu.id, "gpa", e.target.value)
-                  }
-                  className="bg-slate-700 border-slate-600 text-white"
-                />
-
-                <Textarea
-                  placeholder="Honors / Awards"
-                  value={edu.honors}
-                  onChange={(e) =>
-                    updateEducation(edu.id, "honors", e.target.value)
-                  }
-                  className="bg-slate-700 border-slate-600 text-white"
-                />
-
-                <Textarea
-                  placeholder="Clubs / Research / Highlights"
-                  value={edu.description}
-                  onChange={(e) =>
-                    updateEducation(edu.id, "description", e.target.value)
-                  }
-                  className="bg-slate-700 border-slate-600 text-white"
-                />
-              </div>
-            </Card>
-          ))}
-
-          <Button
-            onClick={addEducation}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white gap-2"
-          >
-            <Plus className="w-4 h-4" /> Add Education
-          </Button>
-        </TabsContent>
-
-        {/* Manage Tab */}
-        <TabsContent value="order" className="mt-4">
-          <Card className="bg-slate-800/50 border-slate-700 p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-white">Section Manager</h3>
-
-              <Button
-                onClick={addCustomSection}
-                className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+              <Select
+                onValueChange={(size) =>
+                  setResumeData({ ...resumeData, projectsFontSize: size })
+                }
+                defaultValue="11"
               >
-                <Plus className="w-4 h-4" /> Custom Section
-              </Button>
+                <SelectTrigger className="w-32 bg-slate-700 border-slate-600 text-white">
+                  <Type className="w-4 h-4 mr-2" />
+                  <SelectValue />
+                </SelectTrigger>
+
+                <SelectContent className="bg-slate-800 text-white">
+                  {fontSizes.map((size) => (
+                    <SelectItem key={size.value} value={size.value}>
+                      {size.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            {/* Current Sections */}
-            <div className="mb-6">
-              <h4 className="text-md font-semibold text-gray-300 mb-3">
-                Current Sections
-              </h4>
-
-              {sectionOrder.map((section: string, idx: number) => (
-                <div
-                  key={section}
-                  className="flex justify-between items-center bg-slate-700/50 p-3 rounded-md mb-2"
-                >
-                  <span className="capitalize text-gray-200">{section}</span>
+            {(resumeData.projects || []).map((proj: any, idx: number) => (
+              <Card
+                key={proj.id}
+                className="bg-slate-800/50 border-slate-700 p-6"
+              >
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-white font-bold">Project {idx + 1}</h3>
 
                   <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={() => moveSection(idx, "up")}
-                      className="bg-gray-600 hover:bg-gray-500"
-                      disabled={idx === 0 || section === "personal"}
+                    <Select
+                      value={proj.bulletStyle || "•"}
+                      onValueChange={(val) =>
+                        updateProject(proj.id, "bulletStyle", val)
+                      }
                     >
-                      <ArrowUp className="w-4 h-4" />
-                    </Button>
+                      <SelectTrigger className="w-36 bg-slate-700 border-slate-600 text-white">
+                        <List className="w-4 h-4 mr-2" />
+                        <SelectValue />
+                      </SelectTrigger>
+
+                      <SelectContent className="bg-slate-800 text-white">
+                        {bulletStyles.map((style) => (
+                          <SelectItem key={style.value} value={style.value}>
+                            {style.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
 
                     <Button
-                      size="sm"
-                      onClick={() => moveSection(idx, "down")}
-                      className="bg-gray-600 hover:bg-gray-500"
-                      disabled={section === "personal"}
+                      onClick={() => deleteProject(proj.id)}
+                      size="icon"
+                      variant="ghost"
+                      className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
                     >
-                      <ArrowDown className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4" />
                     </Button>
-
-                    {/* DELETE button disabled for personal */}
-                    {section !== "personal" && (
-                      <Button
-                        size="sm"
-                        onClick={() => deleteSection(section)}
-                        className="bg-red-600 hover:bg-red-700"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    )}
                   </div>
                 </div>
-              ))}
+
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Project Title"
+                      value={proj.title}
+                      onChange={(e) =>
+                        updateProject(proj.id, "title", e.target.value)
+                      }
+                      className="bg-slate-700 border-slate-600 text-white flex-1"
+                    />
+
+                    <Select
+                      onValueChange={(size) =>
+                        updateProjectFieldFontSize(proj.id, "title", size)
+                      }
+                      defaultValue="11"
+                    >
+                      <SelectTrigger className="w-20 bg-slate-700 border-slate-600 text-white">
+                        <Type className="w-4 h-4" />
+                      </SelectTrigger>
+
+                      <SelectContent className="bg-slate-800 text-white">
+                        {fontSizes.map((size) => (
+                          <SelectItem key={size.value} value={size.value}>
+                            {size.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <Input
+                    placeholder="Technologies (comma separated)"
+                    value={proj.technologies?.join(", ") || ""}
+                    onChange={(e) =>
+                      updateProject(
+                        proj.id,
+                        "technologies",
+                        e.target.value
+                          .split(",")
+                          .map((t: string) => t.trim())
+                          .filter(Boolean)
+                      )
+                    }
+                    className="bg-slate-700 border-slate-600 text-white"
+                  />
+
+                  <Select
+                    value={proj.type}
+                    onValueChange={(val) => updateProject(proj.id, "type", val)}
+                  >
+                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
+                      <SelectValue placeholder="Project Type" />
+                    </SelectTrigger>
+
+                    <SelectContent className="bg-slate-800 text-white">
+                      <SelectItem value="Personal">Personal</SelectItem>
+                      <SelectItem value="Academic">Academic</SelectItem>
+                      <SelectItem value="Professional">Professional</SelectItem>
+                      <SelectItem value="Open Source">Open Source</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Textarea
+                    placeholder="Description"
+                    value={proj.description}
+                    onChange={(e) =>
+                      updateProject(proj.id, "description", e.target.value)
+                    }
+                    className="bg-slate-700 border-slate-600 text-white"
+                  />
+
+                  <Textarea
+                    placeholder="Impact / Results"
+                    value={proj.impact}
+                    onChange={(e) =>
+                      updateProject(proj.id, "impact", e.target.value)
+                    }
+                    className="bg-slate-700 border-slate-600 text-white"
+                  />
+
+                  <Input
+                    placeholder="Project Link"
+                    value={proj.link}
+                    onChange={(e) =>
+                      updateProject(proj.id, "link", e.target.value)
+                    }
+                    className="bg-slate-700 border-slate-600 text-white"
+                  />
+
+                  {proj.bullets &&
+                    proj.bullets.map((bullet: string, bIdx: number) => (
+                      <div key={bIdx} className="mb-2">
+                        <div className="flex gap-1 mb-1 items-center">
+                          <Button
+                            size="icon"
+                            onClick={() =>
+                              applyProjectBulletFormatting(
+                                proj.id,
+                                bIdx,
+                                "bold"
+                              )
+                            }
+                            className="bg-slate-700 hover:bg-slate-600 h-8 w-8"
+                          >
+                            <Bold className="w-3 h-3" />
+                          </Button>
+
+                          <Button
+                            size="icon"
+                            onClick={() =>
+                              applyProjectBulletFormatting(
+                                proj.id,
+                                bIdx,
+                                "italic"
+                              )
+                            }
+                            className="bg-slate-700 hover:bg-slate-600 h-8 w-8"
+                          >
+                            <Italic className="w-3 h-3" />
+                          </Button>
+
+                          <Button
+                            size="icon"
+                            onClick={() =>
+                              applyProjectBulletFormatting(
+                                proj.id,
+                                bIdx,
+                                "underline"
+                              )
+                            }
+                            className="bg-slate-700 hover:bg-slate-600 h-8 w-8"
+                          >
+                            <Underline className="w-3 h-3" />
+                          </Button>
+
+                          <Select
+                            onValueChange={(color) =>
+                              applyProjectBulletFormatting(
+                                proj.id,
+                                bIdx,
+                                "color",
+                                color
+                              )
+                            }
+                          >
+                            <SelectTrigger className="w-8 h-8 bg-slate-700 hover:bg-slate-600 border-slate-600 p-0">
+                              <Palette className="w-3 h-3 mx-auto" />
+                            </SelectTrigger>
+
+                            <SelectContent className="bg-slate-800 text-white">
+                              {textColors.map((color) => (
+                                <SelectItem
+                                  key={color.value}
+                                  value={color.value}
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <div
+                                      className="w-4 h-4 rounded"
+                                      style={{ backgroundColor: color.value }}
+                                    />
+                                    {color.label}
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => deleteProjectBullet(proj.id, bIdx)}
+                            className="text-red-400 hover:text-red-300 hover:bg-red-900/20 h-8 w-8 ml-auto"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+
+                        <Textarea
+                          ref={(el) => {
+                            if (el)
+                              textareaRefs.current[
+                                `proj-bullet-${proj.id}-${bIdx}`
+                              ] = el;
+                          }}
+                          value={bullet}
+                          onChange={(e) =>
+                            updateProjectBullet(proj.id, bIdx, e.target.value)
+                          }
+                          className="bg-slate-700 border-slate-600 text-white"
+                          placeholder="Describe project highlight..."
+                        />
+                      </div>
+                    ))}
+
+                  <Button
+                    onClick={() => addProjectBullet(proj.id)}
+                    size="sm"
+                    className="bg-blue-600 hover:bg-blue-700 w-full mt-2"
+                  >
+                    <Plus className="w-4 h-4" /> Add Bullet Point
+                  </Button>
+                </div>
+              </Card>
+            ))}
+
+            <Button
+              onClick={addProject}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white gap-2"
+            >
+              <Plus className="w-4 h-4" /> Add Project
+            </Button>
+          </TabsContent>
+
+          {/* Education Tab */}
+          <TabsContent value="education" className="space-y-4 mt-4">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-lg font-bold text-white">Education</h3>
+
+              <Select
+                onValueChange={(size) =>
+                  setResumeData({ ...resumeData, educationFontSize: size })
+                }
+                defaultValue="11"
+              >
+                <SelectTrigger className="w-32 bg-slate-700 border-slate-600 text-white">
+                  <Type className="w-4 h-4 mr-2" />
+                  <SelectValue />
+                </SelectTrigger>
+
+                <SelectContent className="bg-slate-800 text-white">
+                  {fontSizes.map((size) => (
+                    <SelectItem key={size.value} value={size.value}>
+                      {size.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            {/* Add Back Sections */}
-            <div>
-              <h4 className="text-md font-semibold text-gray-300 mb-3">
-                Add Sections Back
-              </h4>
+            {(resumeData.education || []).map((edu: any, idx: number) => (
+              <Card
+                key={edu.id}
+                className="bg-slate-800/50 border-slate-700 p-6"
+              >
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-white font-bold">Education {idx + 1}</h3>
 
-              <div className="grid grid-cols-2 gap-2">
-                {availableSections
-                  .filter((section) => !sectionOrder.includes(section.id))
-                  .map((section) => (
-                    <Button
-                      key={section.id}
-                      onClick={() => addPredefinedSection(section.id)}
-                      className="bg-green-600 hover:bg-green-700 text-white gap-2 justify-start"
+                  <Button
+                    onClick={() => deleteEducation(edu.id)}
+                    size="icon"
+                    variant="ghost"
+                    className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="University / Institution"
+                      value={edu.school}
+                      onChange={(e) =>
+                        updateEducation(edu.id, "school", e.target.value)
+                      }
+                      className="bg-slate-700 border-slate-600 text-white flex-1"
+                    />
+
+                    <Select
+                      onValueChange={(size) =>
+                        updateEducationFieldFontSize(edu.id, "school", size)
+                      }
+                      defaultValue="11"
                     >
-                      <span>{section.icon}</span>
-                      <span>{section.label}</span>
-                    </Button>
-                  ))}
+                      <SelectTrigger className="w-20 bg-slate-700 border-slate-600 text-white">
+                        <Type className="w-4 h-4" />
+                      </SelectTrigger>
+
+                      <SelectContent className="bg-slate-800 text-white">
+                        {fontSizes.map((size) => (
+                          <SelectItem key={size.value} value={size.value}>
+                            {size.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Degree"
+                      value={edu.degree}
+                      onChange={(e) =>
+                        updateEducation(edu.id, "degree", e.target.value)
+                      }
+                      className="bg-slate-700 border-slate-600 text-white flex-1"
+                    />
+
+                    <Select
+                      onValueChange={(size) =>
+                        updateEducationFieldFontSize(edu.id, "degree", size)
+                      }
+                      defaultValue="11"
+                    >
+                      <SelectTrigger className="w-20 bg-slate-700 border-slate-600 text-white">
+                        <Type className="w-4 h-4" />
+                      </SelectTrigger>
+
+                      <SelectContent className="bg-slate-800 text-white">
+                        {fontSizes.map((size) => (
+                          <SelectItem key={size.value} value={size.value}>
+                            {size.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <Input
+                    placeholder="Minor / Specialization"
+                    value={edu.minor}
+                    onChange={(e) =>
+                      updateEducation(edu.id, "minor", e.target.value)
+                    }
+                    className="bg-slate-700 border-slate-600 text-white"
+                  />
+
+                  <Input
+                    placeholder="Location"
+                    value={edu.location}
+                    onChange={(e) =>
+                      updateEducation(edu.id, "location", e.target.value)
+                    }
+                    className="bg-slate-700 border-slate-600 text-white"
+                  />
+
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Graduation Date"
+                      value={edu.graduationDate}
+                      onChange={(e) =>
+                        updateEducation(
+                          edu.id,
+                          "graduationDate",
+                          e.target.value
+                        )
+                      }
+                      className="bg-slate-700 border-slate-600 text-white flex-1"
+                    />
+
+                    <Select
+                      onValueChange={(size) =>
+                        updateEducationFieldFontSize(
+                          edu.id,
+                          "graduationDate",
+                          size
+                        )
+                      }
+                      defaultValue="11"
+                    >
+                      <SelectTrigger className="w-20 bg-slate-700 border-slate-600 text-white">
+                        <Type className="w-4 h-4" />
+                      </SelectTrigger>
+
+                      <SelectContent className="bg-slate-800 text-white">
+                        {fontSizes.map((size) => (
+                          <SelectItem key={size.value} value={size.value}>
+                            {size.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <Input
+                    placeholder="GPA"
+                    value={edu.gpa}
+                    onChange={(e) =>
+                      updateEducation(edu.id, "gpa", e.target.value)
+                    }
+                    className="bg-slate-700 border-slate-600 text-white"
+                  />
+
+                  <Textarea
+                    placeholder="Honors / Awards"
+                    value={edu.honors}
+                    onChange={(e) =>
+                      updateEducation(edu.id, "honors", e.target.value)
+                    }
+                    className="bg-slate-700 border-slate-600 text-white"
+                  />
+
+                  <Textarea
+                    placeholder="Clubs / Research / Highlights"
+                    value={edu.description}
+                    onChange={(e) =>
+                      updateEducation(edu.id, "description", e.target.value)
+                    }
+                    className="bg-slate-700 border-slate-600 text-white"
+                  />
+                </div>
+              </Card>
+            ))}
+
+            <Button
+              onClick={addEducation}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white gap-2"
+            >
+              <Plus className="w-4 h-4" /> Add Education
+            </Button>
+          </TabsContent>
+
+          {sectionOrder
+            .filter(
+              (section) =>
+                ![
+                  "personal",
+                  "summary",
+                  "skills",
+                  "experience",
+                  "projects",
+                  "education",
+                  "order",
+                ].includes(section)
+            )
+            .map((section) => (
+              <TabsContent key={section} value={section} className="mt-4">
+                <Card className="bg-slate-800/50 border-slate-700 p-6">
+                  <h3 className="text-lg font-bold text-white mb-4 capitalize">
+                    {section.replace(/-/g, " ")}
+                  </h3>
+
+                  {/* Paragraph Mode */}
+                  {typeof resumeData[section] === "string" && (
+                    <Textarea
+                      value={resumeData[section]}
+                      onChange={(e) =>
+                        setResumeData({
+                          ...resumeData,
+                          [section]: e.target.value,
+                        })
+                      }
+                      className="bg-slate-700 border-slate-600 text-white min-h-32"
+                      placeholder="Write details here..."
+                    />
+                  )}
+
+                  {/* Category Mode */}
+                  {typeof resumeData[section] === "object" &&
+                    resumeData[section] !== null && (
+                      <>
+                        <Button
+                          onClick={() => {
+                            const catName = prompt("Enter category name:");
+                            if (!catName) return;
+
+                            setResumeData({
+                              ...resumeData,
+                              [section]: {
+                                ...resumeData[section],
+                                [catName]: [],
+                              },
+                            });
+                          }}
+                          className="bg-blue-600 hover:bg-blue-700 text-white gap-2 mb-4"
+                        >
+                          <Plus className="w-4 h-4" /> Add Category
+                        </Button>
+
+                        {Object.entries(resumeData[section]).map(
+                          ([cat, list]: any) => (
+                            <div key={cat} className="mb-4">
+                              <div className="flex justify-between items-center">
+                                <label className="text-sm font-semibold text-gray-300 capitalize">
+                                  {cat}
+                                </label>
+
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="text-red-400 hover:bg-red-900/20"
+                                  onClick={() => {
+                                    const updated = { ...resumeData[section] };
+                                    delete updated[cat];
+                                    setResumeData({
+                                      ...resumeData,
+                                      [section]: updated,
+                                    });
+                                  }}
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </div>
+
+                              <Input
+                                value={list.join(", ")}
+                                onChange={(e) =>
+                                  setResumeData({
+                                    ...resumeData,
+                                    [section]: {
+                                      ...resumeData[section],
+                                      [cat]: e.target.value
+                                        .split(",")
+                                        .map((v) => v.trim())
+                                        .filter(Boolean),
+                                    },
+                                  })
+                                }
+                                className="bg-slate-700 border-slate-600 text-white mt-1"
+                                placeholder="Separate items with commas"
+                              />
+                            </div>
+                          )
+                        )}
+                      </>
+                    )}
+                </Card>
+              </TabsContent>
+            ))}
+
+          {/* Manage Tab */}
+          <TabsContent value="order" className="mt-4">
+            <Card className="bg-slate-800/50 border-slate-700 p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold text-white">
+                  Section Manager
+                </h3>
+
+                <Button
+                  onClick={addCustomSection}
+                  className="bg-blue-600 hover:bg-blue-700 text-white gap-2"
+                >
+                  <Plus className="w-4 h-4" /> Custom Section
+                </Button>
               </div>
 
-              {availableSections.filter(
-                (section) => !sectionOrder.includes(section.id)
-              ).length === 0 && (
-                <p className="text-gray-400 text-sm">
-                  All standard sections are already added
-                </p>
-              )}
-            </div>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+              {/* Current Sections */}
+              <div className="mb-6">
+                <h4 className="text-md font-semibold text-gray-300 mb-3">
+                  Current Sections
+                </h4>
+
+                {sectionOrder.map((section: string, idx: number) => (
+                  <div
+                    key={section}
+                    className="flex justify-between items-center bg-slate-700/50 p-3 rounded-md mb-2"
+                  >
+                    <span className="capitalize text-gray-200">{section}</span>
+
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => moveSection(idx, "up")}
+                        className="bg-gray-600 hover:bg-gray-500"
+                        disabled={idx === 0 || section === "personal"}
+                      >
+                        <ArrowUp className="w-4 h-4" />
+                      </Button>
+
+                      <Button
+                        size="sm"
+                        onClick={() => moveSection(idx, "down")}
+                        className="bg-gray-600 hover:bg-gray-500"
+                        disabled={section === "personal"}
+                      >
+                        <ArrowDown className="w-4 h-4" />
+                      </Button>
+
+                      {/* DELETE button disabled for personal */}
+                      {section !== "personal" && (
+                        <Button
+                          size="sm"
+                          onClick={() => deleteSection(section)}
+                          className="bg-red-600 hover:bg-red-700"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Add Back Sections */}
+              <div>
+                <h4 className="text-md font-semibold text-gray-300 mb-3">
+                  Add Sections Back
+                </h4>
+
+                <div className="grid grid-cols-2 gap-2">
+                  {availableSections
+                    .filter((section) => !sectionOrder.includes(section.id))
+                    .map((section) => (
+                      <Button
+                        key={section.id}
+                        onClick={() => addPredefinedSection(section.id)}
+                        className="bg-green-600 hover:bg-green-700 text-white gap-2 justify-start"
+                      >
+                        <span>{section.icon}</span>
+                        <span>{section.label}</span>
+                      </Button>
+                    ))}
+                </div>
+
+                {availableSections.filter(
+                  (section) => !sectionOrder.includes(section.id)
+                ).length === 0 && (
+                  <p className="text-gray-400 text-sm">
+                    All standard sections are already added
+                  </p>
+                )}
+              </div>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </>
   );
 }
