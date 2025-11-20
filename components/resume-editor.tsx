@@ -31,17 +31,8 @@ import {
 } from "@/components/ui/select";
 
 /* -------------------------------------------------------------------------- */
-/*                             ⭐ ADDED NEW FIELDS ⭐                           */
+/*                             ⭐ DEFAULTS & CONSTANTS                         */
 /* -------------------------------------------------------------------------- */
-
-//
-// These fields support the new features:
-// - Icon visibility toggle
-// - Link display mode
-//
-// This does NOT change any of your UI code.
-// Just extends resumeData so ResumePreview works.
-//
 
 const defaultIconVisibility = {
   email: true,
@@ -58,11 +49,6 @@ const defaultLinkDisplay = {
   github: "both",
 };
 
-/* -------------------------------------------------------------------------- */
-/*                                 END ADDITIONS                              */
-/* -------------------------------------------------------------------------- */
-
-// Font sizes for all inputs
 const fontSizes = [
   { value: "8", label: "8px" },
   { value: "9", label: "9px" },
@@ -79,7 +65,6 @@ const fontSizes = [
   { value: "28", label: "28px" },
 ];
 
-// Bullet styles
 const bulletStyles = [
   { value: "•", label: "• Bullet" },
   { value: "○", label: "○ Circle" },
@@ -92,7 +77,6 @@ const bulletStyles = [
   { value: "-", label: "- Dash" },
 ];
 
-// Text colors
 const textColors = [
   { value: "#000000", label: "Black" },
   { value: "#1e3a8a", label: "Dark Blue" },
@@ -106,7 +90,6 @@ const textColors = [
   { value: "#6b21a8", label: "Purple" },
 ];
 
-// Available sections
 const availableSections = [
   { id: "experience", label: "Experience", icon: "💼" },
   { id: "projects", label: "Projects", icon: "🚀" },
@@ -114,6 +97,11 @@ const availableSections = [
   { id: "skills", label: "Skills", icon: "⚡" },
   { id: "summary", label: "Summary", icon: "📝" },
 ];
+
+const pretty = (slug: string) =>
+  slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+/* -------------------------------------------------------------------------- */
 
 export default function ResumeEditor({ resumeData, setResumeData }: any) {
   const [sectionOrder, setSectionOrder] = useState(
@@ -131,13 +119,13 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
   const [customSectionModal, setCustomSectionModal] = useState({
     open: false,
     name: "",
-    type: "paragraph",
+    type: "paragraph" as "paragraph" | "category",
   });
 
   const textareaRefs = useRef<{ [key: string]: HTMLTextAreaElement }>({});
   const tabsScrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // ⭐ ADDED – Merge defaults if missing
+  /* ---------------- Merge defaults once ---------------- */
   useEffect(() => {
     setResumeData((prev: any) => ({
       ...prev,
@@ -148,62 +136,51 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
         projects: prev.dateLayout?.projects || "right",
         education: prev.dateLayout?.education || "right",
       },
+      customDateLayout: prev.customDateLayout || {},
     }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Tab navigation
+  /* ---------------- Tabs navigation helpers ---------------- */
   const currentTabIndex =
     activeTab === "order"
       ? sectionOrder.length
       : sectionOrder.indexOf(activeTab);
-
-  const totalTabs = sectionOrder.length + 1; // +1 for "order" tab
+  const totalTabs = sectionOrder.length + 1;
   const canNavigateLeft = currentTabIndex > 0;
   const canNavigateRight = currentTabIndex < totalTabs - 1;
 
-  const navigateTabs = (direction: "left" | "right") => {
-    if (direction === "left" && canNavigateLeft) {
+  const navigateTabs = (dir: "left" | "right") => {
+    if (dir === "left" && canNavigateLeft) {
       if (activeTab === "order") {
         setActiveTab(sectionOrder[sectionOrder.length - 1]);
       } else {
-        const currentIndex = sectionOrder.indexOf(activeTab);
-        setActiveTab(sectionOrder[currentIndex - 1]);
+        const i = sectionOrder.indexOf(activeTab);
+        setActiveTab(sectionOrder[i - 1]);
       }
-    } else if (direction === "right" && canNavigateRight) {
-      const currentIndex = sectionOrder.indexOf(activeTab);
-      if (currentIndex === sectionOrder.length - 1) {
-        setActiveTab("order");
-      } else {
-        setActiveTab(sectionOrder[currentIndex + 1]);
-      }
+    } else if (dir === "right" && canNavigateRight) {
+      const i = sectionOrder.indexOf(activeTab);
+      if (i === sectionOrder.length - 1) setActiveTab("order");
+      else setActiveTab(sectionOrder[i + 1]);
     }
   };
 
-  // Scroll active tab into view
   useEffect(() => {
-    if (tabsScrollContainerRef.current) {
-      setTimeout(() => {
-        const activeTabElement = tabsScrollContainerRef.current?.querySelector(
-          `[data-state="active"], [aria-selected="true"]`
-        ) as HTMLElement;
-
-        if (activeTabElement) {
-          activeTabElement.scrollIntoView({
-            behavior: "smooth",
-            block: "nearest",
-            inline: "center",
-          });
-        }
-      }, 50);
-    }
+    if (!tabsScrollContainerRef.current) return;
+    setTimeout(() => {
+      const el = tabsScrollContainerRef.current!.querySelector(
+        `[data-state="active"], [aria-selected="true"]`
+      ) as HTMLElement | null;
+      if (el) el.scrollIntoView({ behavior: "smooth", inline: "center" });
+    }, 50);
   }, [activeTab]);
 
-  // Update section order
   const updateSectionOrder = (newOrder: string[]) => {
     setSectionOrder(newOrder);
     setResumeData({ ...resumeData, sectionOrder: newOrder });
   };
-  // Formatting helpers
+
+  /* ---------------- Formatting helpers ---------------- */
   const applyFormattingToSelection = (
     refKey: string,
     type: "bold" | "italic" | "underline" | "color",
@@ -211,48 +188,34 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
   ) => {
     const textarea = textareaRefs.current[refKey];
     if (!textarea) return;
-
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const text = textarea.value;
-
     if (start === end) {
       alert("Please select text first to apply formatting!");
       return;
     }
-
     const before = text.substring(0, start);
     const selected = text.substring(start, end);
     const after = text.substring(end);
 
     let formatted = "";
-    if (type === "bold") {
-      formatted = `${before}**${selected}**${after}`;
-    } else if (type === "italic") {
-      formatted = `${before}*${selected}*${after}`;
-    } else if (type === "underline") {
+    if (type === "bold") formatted = `${before}**${selected}**${after}`;
+    else if (type === "italic") formatted = `${before}*${selected}*${after}`;
+    else if (type === "underline")
       formatted = `${before}__${selected}__${after}`;
-    } else if (type === "color" && colorValue) {
+    else if (type === "color" && colorValue)
       formatted = `${before}<span style="color:${colorValue}">${selected}</span>${after}`;
-    }
-
     return formatted;
   };
 
-  // Section management
+  /* ---------------- Section management ---------------- */
   const moveSection = (index: number, direction: "up" | "down") => {
-    /* ---------------------------------------------------------- */
-    /* ⭐ ADDED: Prevent personal section from moving             */
-    /* ---------------------------------------------------------- */
     if (sectionOrder[index] === "personal") return;
-
     const newOrder = [...sectionOrder];
     const newIndex = direction === "up" ? index - 1 : index + 1;
     if (newIndex < 0 || newIndex >= newOrder.length) return;
-
-    // Prevent any section from taking position 0 (reserved for personal)
     if (newIndex === 0) return;
-
     [newOrder[index], newOrder[newIndex]] = [
       newOrder[newIndex],
       newOrder[index],
@@ -263,89 +226,55 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
   const deleteSection = (section: string) => {
     if (section === "personal") return;
     updateSectionOrder(sectionOrder.filter((s: string) => s !== section));
+    const { [section]: _removed, ...rest } = resumeData;
+    setResumeData({ ...rest });
+    if (activeTab === section) setActiveTab("personal");
   };
 
   const addPredefinedSection = (sectionId: string) => {
-    if (!sectionOrder.includes(sectionId)) {
-      updateSectionOrder([...sectionOrder, sectionId]);
+    if (sectionOrder.includes(sectionId)) return;
+    const newOrder = [...sectionOrder, sectionId];
+    updateSectionOrder(newOrder);
 
-      if (
-        sectionId === "experience" &&
-        (!resumeData.experience || resumeData.experience.length === 0)
-      ) {
-        setResumeData({
-          ...resumeData,
-          experience: [],
-          sectionOrder: [...sectionOrder, sectionId],
-        });
-      } else if (
-        sectionId === "projects" &&
-        (!resumeData.projects || resumeData.projects.length === 0)
-      ) {
-        setResumeData({
-          ...resumeData,
-          projects: [],
-          sectionOrder: [...sectionOrder, sectionId],
-        });
-      } else if (
-        sectionId === "education" &&
-        (!resumeData.education || resumeData.education.length === 0)
-      ) {
-        setResumeData({
-          ...resumeData,
-          education: [],
-          sectionOrder: [...sectionOrder, sectionId],
-        });
-      } else if (sectionId === "skills" && !resumeData.skills) {
-        setResumeData({
-          ...resumeData,
-          skills: {},
-          sectionOrder: [...sectionOrder, sectionId],
-        });
-      } else if (sectionId === "summary" && !resumeData.summary) {
-        setResumeData({
-          ...resumeData,
-          summary: "",
-          sectionOrder: [...sectionOrder, sectionId],
-        });
-      }
-    }
+    if (sectionId === "experience" && !resumeData.experience)
+      setResumeData({ ...resumeData, experience: [], sectionOrder: newOrder });
+    else if (sectionId === "projects" && !resumeData.projects)
+      setResumeData({ ...resumeData, projects: [], sectionOrder: newOrder });
+    else if (sectionId === "education" && !resumeData.education)
+      setResumeData({ ...resumeData, education: [], sectionOrder: newOrder });
+    else if (sectionId === "skills" && !resumeData.skills)
+      setResumeData({ ...resumeData, skills: {}, sectionOrder: newOrder });
+    else if (sectionId === "summary" && !resumeData.summary)
+      setResumeData({ ...resumeData, summary: "", sectionOrder: newOrder });
   };
 
-  const addCustomSection = () => {
-    setCustomSectionModal({
-      open: true,
-      name: "",
-      type: "paragraph",
-    });
-  };
+  const addCustomSection = () =>
+    setCustomSectionModal({ open: true, name: "", type: "paragraph" });
 
+  // Create custom section (paragraph or category list)
   const createCustomSection = () => {
     const { name, type } = customSectionModal;
     if (!name.trim()) {
       alert("Section name cannot be empty!");
       return;
     }
-
     const key = name.toLowerCase().replace(/\s+/g, "-");
-
     if (sectionOrder.includes(key)) {
       alert("A section with this name already exists!");
       return;
     }
-
     const updatedOrder = [...sectionOrder, key];
 
     if (type === "paragraph") {
-      setResumeData({
-        ...resumeData,
-        [key]: "",
-        sectionOrder: updatedOrder,
-      });
+      setResumeData({ ...resumeData, [key]: "", sectionOrder: updatedOrder });
     } else {
       setResumeData({
         ...resumeData,
-        [key]: {}, // category mode like Skills
+        [key]: [],
+        customDateLayout: {
+          ...(resumeData.customDateLayout || {}),
+          [key]: "right",
+        },
         sectionOrder: updatedOrder,
       });
     }
@@ -355,39 +284,32 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
     setActiveTab(key);
   };
 
-  // Personal info
-  const updatePersonal = (field: string, value: string) => {
+  /* ---------------- Personal info ---------------- */
+  const updatePersonal = (field: string, value: string) =>
     setResumeData({
       ...resumeData,
       personal: { ...resumeData.personal, [field]: value },
     });
-  };
 
-  const updatePersonalFontSize = (field: string, size: string) => {
+  const updatePersonalFontSize = (field: string, size: string) =>
     setResumeData({
       ...resumeData,
       personalFontSizes: { ...resumeData.personalFontSizes, [field]: size },
     });
-  };
 
   const addCustomPersonalField = () => {
     const fieldName = prompt("Enter field name (e.g., Portfolio, Twitter):");
-    if (fieldName) {
-      setResumeData({
-        ...resumeData,
-        personal: { ...resumeData.personal, [fieldName.toLowerCase()]: "" },
-      });
-    }
+    if (!fieldName) return;
+    setResumeData({
+      ...resumeData,
+      personal: { ...resumeData.personal, [fieldName.toLowerCase()]: "" },
+    });
   };
 
   const deletePersonalField = (field: string) => {
-    const { [field]: removed, ...rest } = resumeData.personal;
+    const { [field]: _removed, ...rest } = resumeData.personal;
     setResumeData({ ...resumeData, personal: rest });
   };
-
-  /* ---------------------------------------------------------- */
-  /* ⭐ ADDED — ICON VISIBILITY + LINK DISPLAY HANDLERS          */
-  /* ---------------------------------------------------------- */
 
   const toggleIconVisibility = (field: string) => {
     setResumeData((prev: any) => ({
@@ -402,21 +324,13 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
   const updateLinkDisplay = (field: string, mode: string) => {
     setResumeData((prev: any) => ({
       ...prev,
-      linkDisplay: {
-        ...prev.linkDisplay,
-        [field]: mode,
-      },
+      linkDisplay: { ...prev.linkDisplay, [field]: mode },
     }));
   };
 
-  /* ---------------------------------------------------------- */
-  /* END OF NEW ADDITIONS                                       */
-  /* ---------------------------------------------------------- */
-
-  // Summary
-  const updateSummary = (value: string) => {
+  /* ---------------- Summary ---------------- */
+  const updateSummary = (value: string) =>
     setResumeData({ ...resumeData, summary: value });
-  };
 
   const applySummaryFormatting = (
     type: "bold" | "italic" | "underline" | "color",
@@ -425,37 +339,36 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
     const formatted = applyFormattingToSelection("summary", type, color);
     if (formatted) updateSummary(formatted);
   };
-  // Skills
+
+  /* ---------------- Skills ---------------- */
   const addSkillCategory = () => {
     const categoryName = prompt("Enter skill category name:");
-    if (categoryName) {
-      setResumeData({
-        ...resumeData,
-        skills: { ...resumeData.skills, [categoryName]: [] },
-      });
-    }
+    if (!categoryName) return;
+    setResumeData({
+      ...resumeData,
+      skills: { ...resumeData.skills, [categoryName]: [] },
+    });
   };
 
   const deleteSkillCategory = (category: string) => {
-    const { [category]: removed, ...rest } = resumeData.skills;
+    const { [category]: _removed, ...rest } = resumeData.skills;
     setResumeData({ ...resumeData, skills: rest });
   };
 
-  const updateSkills = (category: string, value: string) => {
+  const updateSkills = (category: string, value: string) =>
     setResumeData({
       ...resumeData,
       skills: {
         ...resumeData.skills,
         [category]: value
           .split(",")
-          .map((item) => item.trim())
+          .map((s) => s.trim())
           .filter(Boolean),
       },
     });
-  };
 
-  // Experience
-  const addExperience = () => {
+  /* ---------------- Experience ---------------- */
+  const addExperience = () =>
     setResumeData({
       ...resumeData,
       experience: [
@@ -472,42 +385,37 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
         },
       ],
     });
-  };
 
-  const updateExperience = (id: number, field: string, value: any) => {
+  const updateExperience = (id: number, field: string, value: any) =>
     setResumeData({
       ...resumeData,
-      experience: resumeData.experience.map((exp: any) =>
+      experience: (resumeData.experience || []).map((exp: any) =>
         exp.id === id ? { ...exp, [field]: value } : exp
       ),
     });
-  };
 
   const updateExperienceFieldFontSize = (
     id: number,
     field: string,
     size: string
-  ) => {
-    const key = `${id}-${field}`;
+  ) =>
     setResumeData({
       ...resumeData,
       experienceFieldFontSizes: {
         ...resumeData.experienceFieldFontSizes,
-        [key]: size,
+        [`${id}-${field}`]: size,
       },
     });
-  };
 
-  const addBullet = (expId: number) => {
+  const addBullet = (expId: number) =>
     setResumeData({
       ...resumeData,
       experience: resumeData.experience.map((exp: any) =>
         exp.id === expId ? { ...exp, bullets: [...exp.bullets, ""] } : exp
       ),
     });
-  };
 
-  const updateBullet = (expId: number, bulletIdx: number, value: string) => {
+  const updateBullet = (expId: number, bulletIdx: number, value: string) =>
     setResumeData({
       ...resumeData,
       experience: resumeData.experience.map((exp: any) =>
@@ -521,7 +429,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
           : exp
       ),
     });
-  };
 
   const applyBulletFormatting = (
     expId: number,
@@ -540,7 +447,7 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
     }
   };
 
-  const deleteBullet = (expId: number, bulletIdx: number) => {
+  const deleteBullet = (expId: number, bulletIdx: number) =>
     setResumeData({
       ...resumeData,
       experience: resumeData.experience.map((exp: any) =>
@@ -554,17 +461,15 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
           : exp
       ),
     });
-  };
 
-  const deleteExperience = (id: number) => {
+  const deleteExperience = (id: number) =>
     setResumeData({
       ...resumeData,
       experience: resumeData.experience.filter((exp: any) => exp.id !== id),
     });
-  };
 
-  // Projects
-  const addProject = () => {
+  /* ---------------- Projects ---------------- */
+  const addProject = () =>
     setResumeData({
       ...resumeData,
       projects: [
@@ -582,105 +487,89 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
         },
       ],
     });
-  };
 
-  const updateProject = (id: number, field: string, value: any) => {
+  const updateProject = (id: number, field: string, value: any) =>
     setResumeData({
       ...resumeData,
-      projects: resumeData.projects.map((proj: any) =>
-        proj.id === id ? { ...proj, [field]: value } : proj
+      projects: (resumeData.projects || []).map((p: any) =>
+        p.id === id ? { ...p, [field]: value } : p
       ),
     });
-  };
 
   const updateProjectFieldFontSize = (
     id: number,
     field: string,
     size: string
-  ) => {
-    const key = `${id}-${field}`;
+  ) =>
     setResumeData({
       ...resumeData,
       projectFieldFontSizes: {
         ...resumeData.projectFieldFontSizes,
-        [key]: size,
+        [`${id}-${field}`]: size,
       },
     });
-  };
 
-  const addProjectBullet = (projId: number) => {
+  const addProjectBullet = (projId: number) =>
     setResumeData({
       ...resumeData,
-      projects: resumeData.projects.map((proj: any) =>
-        proj.id === projId
-          ? { ...proj, bullets: [...(proj.bullets || []), ""] }
-          : proj
+      projects: resumeData.projects.map((p: any) =>
+        p.id === projId ? { ...p, bullets: [...(p.bullets || []), ""] } : p
       ),
     });
-  };
 
-  const updateProjectBullet = (
-    projId: number,
-    bulletIdx: number,
-    value: string
-  ) => {
+  const updateProjectBullet = (projId: number, bIdx: number, value: string) =>
     setResumeData({
       ...resumeData,
-      projects: resumeData.projects.map((proj: any) =>
-        proj.id === projId
+      projects: resumeData.projects.map((p: any) =>
+        p.id === projId
           ? {
-              ...proj,
-              bullets: proj.bullets.map((b: string, i: number) =>
-                i === bulletIdx ? value : b
+              ...p,
+              bullets: p.bullets.map((b: string, i: number) =>
+                i === bIdx ? value : b
               ),
             }
-          : proj
+          : p
       ),
     });
-  };
 
   const applyProjectBulletFormatting = (
     projId: number,
-    bulletIdx: number,
+    bIdx: number,
     type: "bold" | "italic" | "underline" | "color",
     color?: string
   ) => {
-    const refKey = `proj-bullet-${projId}-${bulletIdx}`;
+    const refKey = `proj-bullet-${projId}-${bIdx}`;
     const formatted = applyFormattingToSelection(refKey, type, color);
     if (formatted) {
       const textarea = textareaRefs.current[refKey];
       if (textarea) {
-        updateProjectBullet(projId, bulletIdx, formatted);
+        updateProjectBullet(projId, bIdx, formatted);
         setTimeout(() => textarea.focus(), 0);
       }
     }
   };
 
-  const deleteProjectBullet = (projId: number, bulletIdx: number) => {
+  const deleteProjectBullet = (projId: number, bIdx: number) =>
     setResumeData({
       ...resumeData,
-      projects: resumeData.projects.map((proj: any) =>
-        proj.id === projId
+      projects: resumeData.projects.map((p: any) =>
+        p.id === projId
           ? {
-              ...proj,
-              bullets: proj.bullets.filter(
-                (_: any, i: number) => i !== bulletIdx
-              ),
+              ...p,
+              bullets: p.bullets.filter((_: any, i: number) => i !== bIdx),
             }
-          : proj
+          : p
       ),
     });
-  };
 
-  const deleteProject = (id: number) => {
+  const deleteProject = (id: number) =>
     setResumeData({
       ...resumeData,
-      projects: resumeData.projects.filter((proj: any) => proj.id !== id),
+      projects: resumeData.projects.filter((p: any) => p.id !== id),
     });
-  };
 
-  // Education
-  const addEducation = () => {
+  /* ---------------- Education ---------------- */
+  const addEducation = () =>
     setResumeData({
       ...resumeData,
       education: [
@@ -698,39 +587,168 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
         },
       ],
     });
-  };
 
-  const updateEducation = (id: number, field: string, value: string) => {
+  const updateEducation = (id: number, field: string, value: string) =>
     setResumeData({
       ...resumeData,
-      education: resumeData.education.map((edu: any) =>
-        edu.id === id ? { ...edu, [field]: value } : edu
+      education: resumeData.education.map((e: any) =>
+        e.id === id ? { ...e, [field]: value } : e
       ),
     });
-  };
 
   const updateEducationFieldFontSize = (
     id: number,
     field: string,
     size: string
-  ) => {
-    const key = `${id}-${field}`;
+  ) =>
     setResumeData({
       ...resumeData,
       educationFieldFontSizes: {
         ...resumeData.educationFieldFontSizes,
-        [key]: size,
+        [`${id}-${field}`]: size,
       },
     });
-  };
 
-  const deleteEducation = (id: number) => {
+  const deleteEducation = (id: number) =>
     setResumeData({
       ...resumeData,
-      education: resumeData.education.filter((edu: any) => edu.id !== id),
+      education: resumeData.education.filter((e: any) => e.id !== id),
+    });
+
+  /* ---------- Custom CATEGORY (experience-style) editor ---------- */
+
+  const addCustomItem = (section: string) => {
+    const list = Array.isArray(resumeData[section]) ? resumeData[section] : [];
+    const newItem = {
+      id: Date.now(),
+      title: "",
+      org: "",
+      location: "",
+      startDate: "",
+      endDate: "",
+      bullets: [""],
+      bulletStyle: "•",
+    };
+    setResumeData({ ...resumeData, [section]: [...list, newItem] });
+  };
+
+  const updateCustomItem = (
+    section: string,
+    id: number,
+    field: string,
+    value: any
+  ) => {
+    const list = Array.isArray(resumeData[section]) ? resumeData[section] : [];
+    setResumeData({
+      ...resumeData,
+      [section]: list.map((it: any) =>
+        it.id === id ? { ...it, [field]: value } : it
+      ),
     });
   };
 
+  const updateCustomItemFontSize = (
+    section: string,
+    id: number,
+    field: string,
+    size: string
+  ) =>
+    setResumeData({
+      ...resumeData,
+      customFieldFontSizes: {
+        ...(resumeData.customFieldFontSizes || {}),
+        [`${section}:${id}-${field}`]: size,
+      },
+    });
+
+  const getCustomItemFontSize = (
+    section: string,
+    id: number,
+    field: string,
+    fallback = "11"
+  ) =>
+    (resumeData.customFieldFontSizes &&
+      resumeData.customFieldFontSizes[`${section}:${id}-${field}`]) ||
+    fallback;
+
+  const addCustomItemBullet = (section: string, id: number) => {
+    const list = Array.isArray(resumeData[section]) ? resumeData[section] : [];
+    setResumeData({
+      ...resumeData,
+      [section]: list.map((it: any) =>
+        it.id === id ? { ...it, bullets: [...(it.bullets || []), ""] } : it
+      ),
+    });
+  };
+
+  const updateCustomItemBullet = (
+    section: string,
+    id: number,
+    bIdx: number,
+    value: string
+  ) => {
+    const list = Array.isArray(resumeData[section]) ? resumeData[section] : [];
+    setResumeData({
+      ...resumeData,
+      [section]: list.map((it: any) =>
+        it.id === id
+          ? {
+              ...it,
+              bullets: it.bullets.map((b: string, i: number) =>
+                i === bIdx ? value : b
+              ),
+            }
+          : it
+      ),
+    });
+  };
+
+  const deleteCustomItemBullet = (
+    section: string,
+    id: number,
+    bIdx: number
+  ) => {
+    const list = Array.isArray(resumeData[section]) ? resumeData[section] : [];
+    setResumeData({
+      ...resumeData,
+      [section]: list.map((it: any) =>
+        it.id === id
+          ? {
+              ...it,
+              bullets: it.bullets.filter((_: any, i: number) => i !== bIdx),
+            }
+          : it
+      ),
+    });
+  };
+
+  const deleteCustomItemEntry = (section: string, id: number) => {
+    const list = Array.isArray(resumeData[section]) ? resumeData[section] : [];
+    setResumeData({
+      ...resumeData,
+      [section]: list.filter((it: any) => it.id !== id),
+    });
+  };
+
+  const applyCustomItemBulletFormatting = (
+    section: string,
+    id: number,
+    bIdx: number,
+    type: "bold" | "italic" | "underline" | "color",
+    color?: string
+  ) => {
+    const refKey = `custom-${section}-${id}-${bIdx}`;
+    const formatted = applyFormattingToSelection(refKey, type, color);
+    if (formatted) {
+      const textarea = textareaRefs.current[refKey];
+      if (textarea) {
+        updateCustomItemBullet(section, id, bIdx, formatted);
+        setTimeout(() => textarea.focus(), 0);
+      }
+    }
+  };
+
+  /* ---------------- UI ---------------- */
   return (
     <>
       {customSectionModal.open && (
@@ -766,7 +784,7 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                     }))
                   }
                 />
-                <span>Paragraph</span>
+                <span>Paragraph (single block)</span>
               </label>
 
               <label className="flex items-center gap-2 cursor-pointer">
@@ -780,7 +798,7 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                     }))
                   }
                 />
-                <span>Category</span>
+                <span>Category (Experience-style list)</span>
               </label>
             </div>
 
@@ -840,42 +858,26 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                       activeTab === section ? "bg-slate-600" : ""
                     }`}
                   >
-                    {section === "order" ? (
-                      <>
-                        <Settings2 className="w-4 h-4 mr-1" /> Manage
-                      </>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        {(() => {
-                          const preset = availableSections.find(
-                            (s) => s.id === section
-                          );
-
-                          // If it's a predefined section, use its icon + label
-                          if (preset) {
-                            return (
-                              <div className="flex items-center gap-2">
-                                <span>{preset.icon}</span>
-                                {preset.label}
-                              </div>
-                            );
-                          }
-
-                          // Otherwise it's a custom section
-                          const prettyName = section
-                            .replace(/-/g, " ")
-                            .replace(/\b\w/g, (c) => c.toUpperCase());
-
+                    <div className="flex items-center gap-2">
+                      {(() => {
+                        const preset = availableSections.find(
+                          (s) => s.id === section
+                        );
+                        if (preset) {
                           return (
                             <div className="flex items-center gap-2">
-                              <span>🧩</span>{" "}
-                              {/* default custom section icon */}
-                              {prettyName}
+                              <span>{preset.icon}</span>
+                              {preset.label}
                             </div>
                           );
-                        })()}
-                      </div>
-                    )}
+                        }
+                        return (
+                          <div className="flex items-center gap-2">
+                            <span>🧩</span> {pretty(section)}
+                          </div>
+                        );
+                      })()}
+                    </div>
                   </TabsTrigger>
                 ))}
 
@@ -901,10 +903,7 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
             </Button>
           </div>
 
-          {/* ---------------------------- */}
-          {/* ⭐ PERSONAL TAB (FULL UPDATED) */}
-          {/* ---------------------------- */}
-
+          {/* ---------------- PERSONAL ---------------- */}
           <TabsContent value="personal" className="space-y-4 mt-4">
             <Card className="bg-slate-800/50 border-slate-700 p-6">
               <div className="flex justify-between mb-4">
@@ -932,7 +931,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                       className="bg-slate-700 border-slate-600 text-white flex-1"
                     />
 
-                    {/* Font size */}
                     <Select
                       onValueChange={(size) =>
                         updatePersonalFontSize(key, size)
@@ -945,7 +943,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                       <SelectTrigger className="w-20 bg-slate-700 border-slate-600 text-white">
                         <Type className="w-4 h-4" />
                       </SelectTrigger>
-
                       <SelectContent className="bg-slate-800 text-white">
                         {fontSizes.map((size) => (
                           <SelectItem key={size.value} value={size.value}>
@@ -954,10 +951,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                         ))}
                       </SelectContent>
                     </Select>
-
-                    {/* ------------------------------------------------------- */}
-                    {/* ⭐ ADDED — ICON VISIBILITY TOGGLE FOR PERSONAL FIELDS   */}
-                    {/* ------------------------------------------------------- */}
 
                     {[
                       "email",
@@ -982,10 +975,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                       </Button>
                     )}
 
-                    {/* ------------------------------------------------------- */}
-                    {/* ⭐ ADDED — LINK DISPLAY MODE SELECTOR                  */}
-                    {/* ------------------------------------------------------- */}
-
                     {["website", "linkedin", "github"].includes(key) && (
                       <Select
                         onValueChange={(mode) => updateLinkDisplay(key, mode)}
@@ -994,7 +983,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                         <SelectTrigger className="w-24 bg-slate-700 border-slate-600 text-white">
                           <SelectValue />
                         </SelectTrigger>
-
                         <SelectContent className="bg-slate-800 text-white">
                           <SelectItem value="icon">Icon Only</SelectItem>
                           <SelectItem value="text">Text Only</SelectItem>
@@ -1003,7 +991,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                       </Select>
                     )}
 
-                    {/* Original delete button */}
                     {!["name", "email", "phone"].includes(key) && (
                       <Button
                         onClick={() => deletePersonalField(key)}
@@ -1019,7 +1006,8 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
               ))}
             </Card>
           </TabsContent>
-          {/* Summary Tab */}
+
+          {/* ---------------- SUMMARY ---------------- */}
           <TabsContent value="summary" className="mt-4">
             <Card className="bg-slate-800/50 border-slate-700 p-6">
               <div className="flex justify-between mb-2 items-center">
@@ -1075,7 +1063,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                     <SelectTrigger className="w-10 h-10 bg-slate-700 hover:bg-slate-600 border-slate-600">
                       <Palette className="w-4 h-4" />
                     </SelectTrigger>
-
                     <SelectContent className="bg-slate-800 text-white">
                       {textColors.map((color) => (
                         <SelectItem key={color.value} value={color.value}>
@@ -1107,7 +1094,7 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
             </Card>
           </TabsContent>
 
-          {/* Skills Tab */}
+          {/* ---------------- SKILLS ---------------- */}
           <TabsContent value="skills" className="space-y-4 mt-4">
             <Card className="bg-slate-800/50 border-slate-700 p-6">
               <div className="flex justify-between mb-4">
@@ -1124,7 +1111,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                       <Type className="w-4 h-4 mr-2" />
                       <SelectValue />
                     </SelectTrigger>
-
                     <SelectContent className="bg-slate-800 text-white">
                       {fontSizes.map((size) => (
                         <SelectItem key={size.value} value={size.value}>
@@ -1163,7 +1149,7 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                     </div>
 
                     <Input
-                      value={skills.join(", ")}
+                      value={(skills || []).join(", ")}
                       onChange={(e) => updateSkills(category, e.target.value)}
                       className="bg-slate-700 border-slate-600 text-white mt-1"
                       placeholder="Separate with commas"
@@ -1174,7 +1160,7 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
             </Card>
           </TabsContent>
 
-          {/* Experience Tab */}
+          {/* ---------------- EXPERIENCE ---------------- */}
           <TabsContent value="experience" className="space-y-4 mt-4">
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-lg font-bold text-white">Experience</h3>
@@ -1189,7 +1175,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                   <Type className="w-4 h-4 mr-2" />
                   <SelectValue />
                 </SelectTrigger>
-
                 <SelectContent className="bg-slate-800 text-white">
                   {fontSizes.map((size) => (
                     <SelectItem key={size.value} value={size.value}>
@@ -1222,10 +1207,8 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                     <SelectTrigger className="w-40 bg-slate-700 border-slate-600 text-white">
                       <SelectValue placeholder="Date Alignment" />
                     </SelectTrigger>
-
                     <SelectContent className="bg-slate-800 text-white">
                       <SelectItem value="left">Left</SelectItem>
-
                       <SelectItem value="right">Right</SelectItem>
                     </SelectContent>
                   </Select>
@@ -1241,7 +1224,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                         <List className="w-4 h-4 mr-2" />
                         <SelectValue />
                       </SelectTrigger>
-
                       <SelectContent className="bg-slate-800 text-white">
                         {bulletStyles.map((style) => (
                           <SelectItem key={style.value} value={style.value}>
@@ -1263,7 +1245,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                 </div>
 
                 <div className="space-y-3">
-                  {/* TITLE */}
                   <div className="flex gap-2">
                     <Input
                       placeholder="Job Title"
@@ -1273,7 +1254,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                       }
                       className="bg-slate-700 border-slate-600 text-white flex-1"
                     />
-
                     <Select
                       onValueChange={(size) =>
                         updateExperienceFieldFontSize(exp.id, "position", size)
@@ -1283,7 +1263,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                       <SelectTrigger className="w-20 bg-slate-700 border-slate-600 text-white">
                         <Type className="w-4 h-4" />
                       </SelectTrigger>
-
                       <SelectContent className="bg-slate-800 text-white">
                         {fontSizes.map((size) => (
                           <SelectItem key={size.value} value={size.value}>
@@ -1294,7 +1273,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                     </Select>
                   </div>
 
-                  {/* COMPANY */}
                   <div className="flex gap-2">
                     <Input
                       placeholder="Company"
@@ -1304,7 +1282,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                       }
                       className="bg-slate-700 border-slate-600 text-white flex-1"
                     />
-
                     <Select
                       onValueChange={(size) =>
                         updateExperienceFieldFontSize(exp.id, "company", size)
@@ -1314,7 +1291,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                       <SelectTrigger className="w-20 bg-slate-700 border-slate-600 text-white">
                         <Type className="w-4 h-4" />
                       </SelectTrigger>
-
                       <SelectContent className="bg-slate-800 text-white">
                         {fontSizes.map((size) => (
                           <SelectItem key={size.value} value={size.value}>
@@ -1325,7 +1301,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                     </Select>
                   </div>
 
-                  {/* LOCATION */}
                   <div className="flex gap-2">
                     <Input
                       placeholder="Location"
@@ -1335,7 +1310,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                       }
                       className="bg-slate-700 border-slate-600 text-white flex-1"
                     />
-
                     <Select
                       onValueChange={(size) =>
                         updateExperienceFieldFontSize(exp.id, "location", size)
@@ -1345,7 +1319,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                       <SelectTrigger className="w-20 bg-slate-700 border-slate-600 text-white">
                         <Type className="w-4 h-4" />
                       </SelectTrigger>
-
                       <SelectContent className="bg-slate-800 text-white">
                         {fontSizes.map((size) => (
                           <SelectItem key={size.value} value={size.value}>
@@ -1356,7 +1329,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                     </Select>
                   </div>
 
-                  {/* DATES */}
                   <div className="grid grid-cols-2 gap-3">
                     <div className="flex gap-2">
                       <Input
@@ -1367,7 +1339,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                         }
                         className="bg-slate-700 border-slate-600 text-white flex-1"
                       />
-
                       <Select
                         onValueChange={(size) =>
                           updateExperienceFieldFontSize(
@@ -1381,7 +1352,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                         <SelectTrigger className="w-16 bg-slate-700 border-slate-600 text-white">
                           <Type className="w-4 h-4" />
                         </SelectTrigger>
-
                         <SelectContent className="bg-slate-800 text-white">
                           {fontSizes.map((size) => (
                             <SelectItem key={size.value} value={size.value}>
@@ -1401,7 +1371,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                         }
                         className="bg-slate-700 border-slate-600 text-white flex-1"
                       />
-
                       <Select
                         onValueChange={(size) =>
                           updateExperienceFieldFontSize(exp.id, "endDate", size)
@@ -1411,7 +1380,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                         <SelectTrigger className="w-16 bg-slate-700 border-slate-600 text-white">
                           <Type className="w-4 h-4" />
                         </SelectTrigger>
-
                         <SelectContent className="bg-slate-800 text-white">
                           {fontSizes.map((size) => (
                             <SelectItem key={size.value} value={size.value}>
@@ -1423,7 +1391,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                     </div>
                   </div>
 
-                  {/* BULLETS */}
                   {exp.bullets.map((bullet: string, bIdx: number) => (
                     <div key={bIdx} className="mb-2">
                       <div className="flex gap-1 mb-1 items-center">
@@ -1436,7 +1403,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                         >
                           <Bold className="w-3 h-3" />
                         </Button>
-
                         <Button
                           size="icon"
                           onClick={() =>
@@ -1446,7 +1412,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                         >
                           <Italic className="w-3 h-3" />
                         </Button>
-
                         <Button
                           size="icon"
                           onClick={() =>
@@ -1456,7 +1421,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                         >
                           <Underline className="w-3 h-3" />
                         </Button>
-
                         <Select
                           onValueChange={(color) =>
                             applyBulletFormatting(exp.id, bIdx, "color", color)
@@ -1465,7 +1429,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                           <SelectTrigger className="w-8 h-8 bg-slate-700 hover:bg-slate-600 border-slate-600 p-0">
                             <Palette className="w-3 h-3 mx-auto" />
                           </SelectTrigger>
-
                           <SelectContent className="bg-slate-800 text-white">
                             {textColors.map((color) => (
                               <SelectItem key={color.value} value={color.value}>
@@ -1526,7 +1489,7 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
             </Button>
           </TabsContent>
 
-          {/* Projects Tab */}
+          {/* ---------------- PROJECTS ---------------- */}
           <TabsContent value="projects" className="space-y-4 mt-4">
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-lg font-bold text-white">Projects</h3>
@@ -1543,7 +1506,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                 <SelectTrigger className="w-40 bg-slate-700 border-slate-600 text-white">
                   <SelectValue placeholder="Date Alignment" />
                 </SelectTrigger>
-
                 <SelectContent className="bg-slate-800 text-white">
                   <SelectItem value="left">Left</SelectItem>
                   <SelectItem value="right">Right</SelectItem>
@@ -1560,7 +1522,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                   <Type className="w-4 h-4 mr-2" />
                   <SelectValue />
                 </SelectTrigger>
-
                 <SelectContent className="bg-slate-800 text-white">
                   {fontSizes.map((size) => (
                     <SelectItem key={size.value} value={size.value}>
@@ -1590,7 +1551,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                         <List className="w-4 h-4 mr-2" />
                         <SelectValue />
                       </SelectTrigger>
-
                       <SelectContent className="bg-slate-800 text-white">
                         {bulletStyles.map((style) => (
                           <SelectItem key={style.value} value={style.value}>
@@ -1621,7 +1581,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                       }
                       className="bg-slate-700 border-slate-600 text-white flex-1"
                     />
-
                     <Select
                       onValueChange={(size) =>
                         updateProjectFieldFontSize(proj.id, "title", size)
@@ -1631,7 +1590,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                       <SelectTrigger className="w-20 bg-slate-700 border-slate-600 text-white">
                         <Type className="w-4 h-4" />
                       </SelectTrigger>
-
                       <SelectContent className="bg-slate-800 text-white">
                         {fontSizes.map((size) => (
                           <SelectItem key={size.value} value={size.value}>
@@ -1665,7 +1623,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                     <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
                       <SelectValue placeholder="Project Type" />
                     </SelectTrigger>
-
                     <SelectContent className="bg-slate-800 text-white">
                       <SelectItem value="Personal">Personal</SelectItem>
                       <SelectItem value="Academic">Academic</SelectItem>
@@ -1701,110 +1658,99 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                     className="bg-slate-700 border-slate-600 text-white"
                   />
 
-                  {proj.bullets &&
-                    proj.bullets.map((bullet: string, bIdx: number) => (
-                      <div key={bIdx} className="mb-2">
-                        <div className="flex gap-1 mb-1 items-center">
-                          <Button
-                            size="icon"
-                            onClick={() =>
-                              applyProjectBulletFormatting(
-                                proj.id,
-                                bIdx,
-                                "bold"
-                              )
-                            }
-                            className="bg-slate-700 hover:bg-slate-600 h-8 w-8"
-                          >
-                            <Bold className="w-3 h-3" />
-                          </Button>
-
-                          <Button
-                            size="icon"
-                            onClick={() =>
-                              applyProjectBulletFormatting(
-                                proj.id,
-                                bIdx,
-                                "italic"
-                              )
-                            }
-                            className="bg-slate-700 hover:bg-slate-600 h-8 w-8"
-                          >
-                            <Italic className="w-3 h-3" />
-                          </Button>
-
-                          <Button
-                            size="icon"
-                            onClick={() =>
-                              applyProjectBulletFormatting(
-                                proj.id,
-                                bIdx,
-                                "underline"
-                              )
-                            }
-                            className="bg-slate-700 hover:bg-slate-600 h-8 w-8"
-                          >
-                            <Underline className="w-3 h-3" />
-                          </Button>
-
-                          <Select
-                            onValueChange={(color) =>
-                              applyProjectBulletFormatting(
-                                proj.id,
-                                bIdx,
-                                "color",
-                                color
-                              )
-                            }
-                          >
-                            <SelectTrigger className="w-8 h-8 bg-slate-700 hover:bg-slate-600 border-slate-600 p-0">
-                              <Palette className="w-3 h-3 mx-auto" />
-                            </SelectTrigger>
-
-                            <SelectContent className="bg-slate-800 text-white">
-                              {textColors.map((color) => (
-                                <SelectItem
-                                  key={color.value}
-                                  value={color.value}
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <div
-                                      className="w-4 h-4 rounded"
-                                      style={{ backgroundColor: color.value }}
-                                    />
-                                    {color.label}
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => deleteProjectBullet(proj.id, bIdx)}
-                            className="text-red-400 hover:text-red-300 hover:bg-red-900/20 h-8 w-8 ml-auto"
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-                        </div>
-
-                        <Textarea
-                          ref={(el) => {
-                            if (el)
-                              textareaRefs.current[
-                                `proj-bullet-${proj.id}-${bIdx}`
-                              ] = el;
-                          }}
-                          value={bullet}
-                          onChange={(e) =>
-                            updateProjectBullet(proj.id, bIdx, e.target.value)
+                  {(proj.bullets || []).map((bullet: string, bIdx: number) => (
+                    <div key={bIdx} className="mb-2">
+                      <div className="flex gap-1 mb-1 items-center">
+                        <Button
+                          size="icon"
+                          onClick={() =>
+                            applyProjectBulletFormatting(proj.id, bIdx, "bold")
                           }
-                          className="bg-slate-700 border-slate-600 text-white"
-                          placeholder="Describe project highlight..."
-                        />
+                          className="bg-slate-700 hover:bg-slate-600 h-8 w-8"
+                        >
+                          <Bold className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          onClick={() =>
+                            applyProjectBulletFormatting(
+                              proj.id,
+                              bIdx,
+                              "italic"
+                            )
+                          }
+                          className="bg-slate-700 hover:bg-slate-600 h-8 w-8"
+                        >
+                          <Italic className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          onClick={() =>
+                            applyProjectBulletFormatting(
+                              proj.id,
+                              bIdx,
+                              "underline"
+                            )
+                          }
+                          className="bg-slate-700 hover:bg-slate-600 h-8 w-8"
+                        >
+                          <Underline className="w-3 h-3" />
+                        </Button>
+
+                        <Select
+                          onValueChange={(color) =>
+                            applyProjectBulletFormatting(
+                              proj.id,
+                              bIdx,
+                              "color",
+                              color
+                            )
+                          }
+                        >
+                          <SelectTrigger className="w-8 h-8 bg-slate-700 hover:bg-slate-600 border-slate-600 p-0">
+                            <Palette className="w-3 h-3 mx-auto" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-slate-800 text-white">
+                            {textColors.map((color) => (
+                              <SelectItem key={color.value} value={color.value}>
+                                <div className="flex items-center gap-2">
+                                  <div
+                                    className="w-4 h-4 rounded"
+                                    style={{ backgroundColor: color.value }}
+                                  />
+                                  {color.label}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => deleteProjectBullet(proj.id, bIdx)}
+                          className="text-red-400 hover:text-red-300 hover:bg-red-900/20 h-8 w-8 ml-auto"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
                       </div>
-                    ))}
+
+                      <Textarea
+                        ref={(el) => {
+                          if (el)
+                            textareaRefs.current[
+                              `proj-bullet-${proj.id}-${bIdx}`
+                            ] = el;
+                        }}
+                        value={bullet}
+                        onChange={(e) =>
+                          updateProjectBullet(proj.id, bIdx, e.target.value)
+                        }
+                        className="bg-slate-700 border-slate-600 text-white"
+                        placeholder="Describe project highlight..."
+                      />
+                    </div>
+                  ))}
 
                   <Button
                     onClick={() => addProjectBullet(proj.id)}
@@ -1825,7 +1771,7 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
             </Button>
           </TabsContent>
 
-          {/* Education Tab */}
+          {/* ---------------- EDUCATION ---------------- */}
           <TabsContent value="education" className="space-y-4 mt-4">
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-lg font-bold text-white">Education</h3>
@@ -1842,7 +1788,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                 <SelectTrigger className="w-40 bg-slate-700 border-slate-600 text-white">
                   <SelectValue placeholder="Date Alignment" />
                 </SelectTrigger>
-
                 <SelectContent className="bg-slate-800 text-white">
                   <SelectItem value="left">Left</SelectItem>
                   <SelectItem value="right">Right</SelectItem>
@@ -1859,7 +1804,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                   <Type className="w-4 h-4 mr-2" />
                   <SelectValue />
                 </SelectTrigger>
-
                 <SelectContent className="bg-slate-800 text-white">
                   {fontSizes.map((size) => (
                     <SelectItem key={size.value} value={size.value}>
@@ -1877,7 +1821,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
               >
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-white font-bold">Education {idx + 1}</h3>
-
                   <Button
                     onClick={() => deleteEducation(edu.id)}
                     size="icon"
@@ -1898,7 +1841,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                       }
                       className="bg-slate-700 border-slate-600 text-white flex-1"
                     />
-
                     <Select
                       onValueChange={(size) =>
                         updateEducationFieldFontSize(edu.id, "school", size)
@@ -1908,7 +1850,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                       <SelectTrigger className="w-20 bg-slate-700 border-slate-600 text-white">
                         <Type className="w-4 h-4" />
                       </SelectTrigger>
-
                       <SelectContent className="bg-slate-800 text-white">
                         {fontSizes.map((size) => (
                           <SelectItem key={size.value} value={size.value}>
@@ -1928,7 +1869,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                       }
                       className="bg-slate-700 border-slate-600 text-white flex-1"
                     />
-
                     <Select
                       onValueChange={(size) =>
                         updateEducationFieldFontSize(edu.id, "degree", size)
@@ -1938,7 +1878,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                       <SelectTrigger className="w-20 bg-slate-700 border-slate-600 text-white">
                         <Type className="w-4 h-4" />
                       </SelectTrigger>
-
                       <SelectContent className="bg-slate-800 text-white">
                         {fontSizes.map((size) => (
                           <SelectItem key={size.value} value={size.value}>
@@ -1980,7 +1919,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                       }
                       className="bg-slate-700 border-slate-600 text-white flex-1"
                     />
-
                     <Select
                       onValueChange={(size) =>
                         updateEducationFieldFontSize(
@@ -1994,7 +1932,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                       <SelectTrigger className="w-20 bg-slate-700 border-slate-600 text-white">
                         <Type className="w-4 h-4" />
                       </SelectTrigger>
-
                       <SelectContent className="bg-slate-800 text-white">
                         {fontSizes.map((size) => (
                           <SelectItem key={size.value} value={size.value}>
@@ -2043,9 +1980,10 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
             </Button>
           </TabsContent>
 
+          {/* ---------------- CUSTOM SECTIONS ---------------- */}
           {sectionOrder
             .filter(
-              (section) =>
+              (s) =>
                 ![
                   "personal",
                   "summary",
@@ -2054,104 +1992,562 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                   "projects",
                   "education",
                   "order",
-                ].includes(section)
+                ].includes(s)
             )
-            .map((section) => (
-              <TabsContent key={section} value={section} className="mt-4">
-                <Card className="bg-slate-800/50 border-slate-700 p-6">
-                  <h3 className="text-lg font-bold text-white mb-4 capitalize">
-                    {section.replace(/-/g, " ")}
-                  </h3>
+            .map((section) => {
+              const val = resumeData[section];
+              return (
+                <TabsContent key={section} value={section} className="mt-4">
+                  <Card className="bg-slate-800/50 border-slate-700 p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-bold text-white capitalize">
+                        {pretty(section)}
+                      </h3>
 
-                  {/* Paragraph Mode */}
-                  {typeof resumeData[section] === "string" && (
-                    <Textarea
-                      value={resumeData[section]}
-                      onChange={(e) =>
-                        setResumeData({
-                          ...resumeData,
-                          [section]: e.target.value,
-                        })
-                      }
-                      className="bg-slate-700 border-slate-600 text-white min-h-32"
-                      placeholder="Write details here..."
-                    />
-                  )}
-
-                  {/* Category Mode */}
-                  {typeof resumeData[section] === "object" &&
-                    resumeData[section] !== null && (
-                      <>
-                        <Button
-                          onClick={() => {
-                            const catName = prompt("Enter category name:");
-                            if (!catName) return;
-
+                      {Array.isArray(val) && (
+                        <Select
+                          onValueChange={(v) =>
                             setResumeData({
                               ...resumeData,
-                              [section]: {
-                                ...resumeData[section],
-                                [catName]: [],
+                              customDateLayout: {
+                                ...(resumeData.customDateLayout || {}),
+                                [section]: v,
                               },
-                            });
-                          }}
-                          className="bg-blue-600 hover:bg-blue-700 text-white gap-2 mb-4"
+                            })
+                          }
+                          defaultValue={
+                            resumeData.customDateLayout?.[section] || "right"
+                          }
                         >
-                          <Plus className="w-4 h-4" /> Add Category
-                        </Button>
+                          <SelectTrigger className="w-40 bg-slate-700 border-slate-600 text-white">
+                            <SelectValue placeholder="Date Alignment" />
+                          </SelectTrigger>
+                          <SelectContent className="bg-slate-800 text-white">
+                            <SelectItem value="left">Left</SelectItem>
+                            <SelectItem value="right">Right</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
 
-                        {Object.entries(resumeData[section]).map(
-                          ([cat, list]: any) => (
-                            <div key={cat} className="mb-4">
-                              <div className="flex justify-between items-center">
-                                <label className="text-sm font-semibold text-gray-300 capitalize">
-                                  {cat}
-                                </label>
+                    {/* Paragraph */}
+                    {typeof val === "string" && (
+                      <Textarea
+                        value={val}
+                        onChange={(e) =>
+                          setResumeData({
+                            ...resumeData,
+                            [section]: e.target.value,
+                          })
+                        }
+                        className="bg-slate-700 border-slate-600 text-white min-h-32"
+                        placeholder={`Write details for ${pretty(section)}...`}
+                      />
+                    )}
+
+                    {/* Experience-style list */}
+                    {Array.isArray(val) && (
+                      <>
+                        {(val as any[]).map((item: any, idx: number) => (
+                          <Card
+                            key={item.id}
+                            className="bg-slate-800/50 border-slate-700 p-4 mb-4"
+                          >
+                            <div className="flex justify-between items-center mb-3">
+                              <h4 className="text-white font-semibold">
+                                {pretty(section)} {idx + 1}
+                              </h4>
+
+                              <div className="flex gap-2">
+                                <Select
+                                  value={item.bulletStyle || "•"}
+                                  onValueChange={(v) =>
+                                    updateCustomItem(
+                                      section,
+                                      item.id,
+                                      "bulletStyle",
+                                      v
+                                    )
+                                  }
+                                >
+                                  <SelectTrigger className="w-36 bg-slate-700 border-slate-600 text-white">
+                                    <List className="w-4 h-4 mr-2" />
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-slate-800 text-white">
+                                    {bulletStyles.map((style) => (
+                                      <SelectItem
+                                        key={style.value}
+                                        value={style.value}
+                                      >
+                                        {style.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
 
                                 <Button
+                                  onClick={() =>
+                                    deleteCustomItemEntry(section, item.id)
+                                  }
                                   size="icon"
                                   variant="ghost"
-                                  className="text-red-400 hover:bg-red-900/20"
-                                  onClick={() => {
-                                    const updated = { ...resumeData[section] };
-                                    delete updated[cat];
-                                    setResumeData({
-                                      ...resumeData,
-                                      [section]: updated,
-                                    });
-                                  }}
+                                  className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
                                 >
-                                  <X className="w-4 h-4" />
+                                  <Trash2 className="w-4 h-4" />
                                 </Button>
                               </div>
-
-                              <Input
-                                value={list.join(", ")}
-                                onChange={(e) =>
-                                  setResumeData({
-                                    ...resumeData,
-                                    [section]: {
-                                      ...resumeData[section],
-                                      [cat]: e.target.value
-                                        .split(",")
-                                        .map((v) => v.trim())
-                                        .filter(Boolean),
-                                    },
-                                  })
-                                }
-                                className="bg-slate-700 border-slate-600 text-white mt-1"
-                                placeholder="Separate items with commas"
-                              />
                             </div>
-                          )
-                        )}
+
+                            <div className="space-y-3">
+                              <div className="flex gap-2">
+                                <Input
+                                  placeholder="Title"
+                                  value={item.title}
+                                  onChange={(e) =>
+                                    updateCustomItem(
+                                      section,
+                                      item.id,
+                                      "title",
+                                      e.target.value
+                                    )
+                                  }
+                                  className="bg-slate-700 border-slate-600 text-white flex-1"
+                                />
+                                <Select
+                                  onValueChange={(size) =>
+                                    updateCustomItemFontSize(
+                                      section,
+                                      item.id,
+                                      "title",
+                                      size
+                                    )
+                                  }
+                                  defaultValue={getCustomItemFontSize(
+                                    section,
+                                    item.id,
+                                    "title"
+                                  )}
+                                >
+                                  <SelectTrigger className="w-20 bg-slate-700 border-slate-600 text-white">
+                                    <Type className="w-4 h-4" />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-slate-800 text-white">
+                                    {fontSizes.map((size) => (
+                                      <SelectItem
+                                        key={size.value}
+                                        value={size.value}
+                                      >
+                                        {size.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div className="flex gap-2">
+                                <Input
+                                  placeholder="Organization"
+                                  value={item.org}
+                                  onChange={(e) =>
+                                    updateCustomItem(
+                                      section,
+                                      item.id,
+                                      "org",
+                                      e.target.value
+                                    )
+                                  }
+                                  className="bg-slate-700 border-slate-600 text-white flex-1"
+                                />
+                                <Select
+                                  onValueChange={(size) =>
+                                    updateCustomItemFontSize(
+                                      section,
+                                      item.id,
+                                      "org",
+                                      size
+                                    )
+                                  }
+                                  defaultValue={getCustomItemFontSize(
+                                    section,
+                                    item.id,
+                                    "org"
+                                  )}
+                                >
+                                  <SelectTrigger className="w-20 bg-slate-700 border-slate-600 text-white">
+                                    <Type className="w-4 h-4" />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-slate-800 text-white">
+                                    {fontSizes.map((size) => (
+                                      <SelectItem
+                                        key={size.value}
+                                        value={size.value}
+                                      >
+                                        {size.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div className="flex gap-2">
+                                <Input
+                                  placeholder="Location"
+                                  value={item.location}
+                                  onChange={(e) =>
+                                    updateCustomItem(
+                                      section,
+                                      item.id,
+                                      "location",
+                                      e.target.value
+                                    )
+                                  }
+                                  className="bg-slate-700 border-slate-600 text-white flex-1"
+                                />
+                                <Select
+                                  onValueChange={(size) =>
+                                    updateCustomItemFontSize(
+                                      section,
+                                      item.id,
+                                      "location",
+                                      size
+                                    )
+                                  }
+                                  defaultValue={getCustomItemFontSize(
+                                    section,
+                                    item.id,
+                                    "location"
+                                  )}
+                                >
+                                  <SelectTrigger className="w-20 bg-slate-700 border-slate-600 text-white">
+                                    <Type className="w-4 h-4" />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-slate-800 text-white">
+                                    {fontSizes.map((size) => (
+                                      <SelectItem
+                                        key={size.value}
+                                        value={size.value}
+                                      >
+                                        {size.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="flex gap-2">
+                                  <Input
+                                    placeholder="Start Date"
+                                    value={item.startDate}
+                                    onChange={(e) =>
+                                      updateCustomItem(
+                                        section,
+                                        item.id,
+                                        "startDate",
+                                        e.target.value
+                                      )
+                                    }
+                                    className="bg-slate-700 border-slate-600 text-white flex-1"
+                                  />
+                                  <Select
+                                    onValueChange={(size) =>
+                                      updateCustomItemFontSize(
+                                        section,
+                                        item.id,
+                                        "startDate",
+                                        size
+                                      )
+                                    }
+                                    defaultValue={getCustomItemFontSize(
+                                      section,
+                                      item.id,
+                                      "startDate"
+                                    )}
+                                  >
+                                    <SelectTrigger className="w-16 bg-slate-700 border-slate-600 text-white">
+                                      <Type className="w-4 h-4" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-slate-800 text-white">
+                                      {fontSizes.map((size) => (
+                                        <SelectItem
+                                          key={size.value}
+                                          value={size.value}
+                                        >
+                                          {size.label}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+
+                                <div className="flex gap-2">
+                                  <Input
+                                    placeholder="End Date"
+                                    value={item.endDate}
+                                    onChange={(e) =>
+                                      updateCustomItem(
+                                        section,
+                                        item.id,
+                                        "endDate",
+                                        e.target.value
+                                      )
+                                    }
+                                    className="bg-slate-700 border-slate-600 text-white flex-1"
+                                  />
+                                  <Select
+                                    onValueChange={(size) =>
+                                      updateCustomItemFontSize(
+                                        section,
+                                        item.id,
+                                        "endDate",
+                                        size
+                                      )
+                                    }
+                                    defaultValue={getCustomItemFontSize(
+                                      section,
+                                      item.id,
+                                      "endDate"
+                                    )}
+                                  >
+                                    <SelectTrigger className="w-16 bg-slate-700 border-slate-600 text-white">
+                                      <Type className="w-4 h-4" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-slate-800 text-white">
+                                      {fontSizes.map((size) => (
+                                        <SelectItem
+                                          key={size.value}
+                                          value={size.value}
+                                        >
+                                          {size.label}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </div>
+
+                              {(item.bullets || []).map(
+                                (b: string, bIdx: number) => (
+                                  <div key={bIdx} className="mb-2">
+                                    <div className="flex gap-1 mb-1 items-center">
+                                      <Button
+                                        size="icon"
+                                        onClick={() =>
+                                          applyCustomItemBulletFormatting(
+                                            section,
+                                            item.id,
+                                            bIdx,
+                                            "bold"
+                                          )
+                                        }
+                                        className="bg-slate-700 hover:bg-slate-600 h-8 w-8"
+                                      >
+                                        <Bold className="w-3 h-3" />
+                                      </Button>
+                                      <Button
+                                        size="icon"
+                                        onClick={() =>
+                                          applyCustomItemBulletFormatting(
+                                            section,
+                                            item.id,
+                                            bIdx,
+                                            "italic"
+                                          )
+                                        }
+                                        className="bg-slate-700 hover:bg-slate-600 h-8 w-8"
+                                      >
+                                        <Italic className="w-3 h-3" />
+                                      </Button>
+                                      <Button
+                                        size="icon"
+                                        onClick={() =>
+                                          applyCustomItemBulletFormatting(
+                                            section,
+                                            item.id,
+                                            bIdx,
+                                            "underline"
+                                          )
+                                        }
+                                        className="bg-slate-700 hover:bg-slate-600 h-8 w-8"
+                                      >
+                                        <Underline className="w-3 h-3" />
+                                      </Button>
+
+                                      <Select
+                                        onValueChange={(color) =>
+                                          applyCustomItemBulletFormatting(
+                                            section,
+                                            item.id,
+                                            bIdx,
+                                            "color",
+                                            color
+                                          )
+                                        }
+                                      >
+                                        <SelectTrigger className="w-8 h-8 bg-slate-700 hover:bg-slate-600 border-slate-600 p-0">
+                                          <Palette className="w-3 h-3 mx-auto" />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-slate-800 text-white">
+                                          {textColors.map((color) => (
+                                            <SelectItem
+                                              key={color.value}
+                                              value={color.value}
+                                            >
+                                              <div className="flex items-center gap-2">
+                                                <div
+                                                  className="w-4 h-4 rounded"
+                                                  style={{
+                                                    backgroundColor:
+                                                      color.value,
+                                                  }}
+                                                />
+                                                {color.label}
+                                              </div>
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        onClick={() =>
+                                          deleteCustomItemBullet(
+                                            section,
+                                            item.id,
+                                            bIdx
+                                          )
+                                        }
+                                        className="text-red-400 hover:text-red-300 hover:bg-red-900/20 h-8 w-8 ml-auto"
+                                      >
+                                        <X className="w-4 h-4" />
+                                      </Button>
+                                    </div>
+
+                                    <Textarea
+                                      ref={(el) => {
+                                        if (el)
+                                          textareaRefs.current[
+                                            `custom-${section}-${item.id}-${bIdx}`
+                                          ] = el;
+                                      }}
+                                      value={b}
+                                      onChange={(e) =>
+                                        updateCustomItemBullet(
+                                          section,
+                                          item.id,
+                                          bIdx,
+                                          e.target.value
+                                        )
+                                      }
+                                      className="bg-slate-700 border-slate-600 text-white"
+                                      placeholder="Describe highlight..."
+                                    />
+                                  </div>
+                                )
+                              )}
+
+                              <Button
+                                onClick={() =>
+                                  addCustomItemBullet(section, item.id)
+                                }
+                                size="sm"
+                                className="bg-blue-600 hover:bg-blue-700 w-full mt-2"
+                              >
+                                <Plus className="w-4 h-4" /> Add Bullet
+                              </Button>
+                            </div>
+                          </Card>
+                        ))}
+
+                        <Button
+                          onClick={() => addCustomItem(section)}
+                          className="w-full bg-blue-600 hover:bg-blue-700 text-white gap-2"
+                        >
+                          <Plus className="w-4 h-4" /> Add {pretty(section)}{" "}
+                          Item
+                        </Button>
                       </>
                     )}
-                </Card>
-              </TabsContent>
-            ))}
 
-          {/* Manage Tab */}
+                    {/* Legacy object (tag map) preserved */}
+                    {typeof val === "object" &&
+                      val !== null &&
+                      !Array.isArray(val) && (
+                        <>
+                          <Button
+                            onClick={() => {
+                              const cat = prompt("Enter category name:");
+                              if (!cat) return;
+                              setResumeData({
+                                ...resumeData,
+                                [section]: {
+                                  ...resumeData[section],
+                                  [cat]: [],
+                                },
+                              });
+                            }}
+                            className="bg-blue-600 hover:bg-blue-700 text-white gap-2 mb-4"
+                          >
+                            <Plus className="w-4 h-4" /> Add Category
+                          </Button>
+
+                          {Object.entries(resumeData[section]).map(
+                            ([cat, list]: any) => (
+                              <div key={cat} className="mb-4">
+                                <div className="flex justify-between items-center">
+                                  <label className="text-sm font-semibold text-gray-300 capitalize">
+                                    {cat}
+                                  </label>
+
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="text-red-400 hover:bg-red-900/20"
+                                    onClick={() => {
+                                      const updated = {
+                                        ...resumeData[section],
+                                      };
+                                      delete updated[cat];
+                                      setResumeData({
+                                        ...resumeData,
+                                        [section]: updated,
+                                      });
+                                    }}
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </Button>
+                                </div>
+
+                                <Input
+                                  value={(list || []).join(", ")}
+                                  onChange={(e) =>
+                                    setResumeData({
+                                      ...resumeData,
+                                      [section]: {
+                                        ...resumeData[section],
+                                        [cat]: e.target.value
+                                          .split(",")
+                                          .map((v) => v.trim())
+                                          .filter(Boolean),
+                                      },
+                                    })
+                                  }
+                                  className="bg-slate-700 border-slate-600 text-white mt-1"
+                                  placeholder="Separate items with commas"
+                                />
+                              </div>
+                            )
+                          )}
+                        </>
+                      )}
+                  </Card>
+                </TabsContent>
+              );
+            })}
+
+          {/* ---------------- MANAGE ---------------- */}
           <TabsContent value="order" className="mt-4">
             <Card className="bg-slate-800/50 border-slate-700 p-6">
               <div className="flex justify-between items-center mb-4">
@@ -2167,7 +2563,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                 </Button>
               </div>
 
-              {/* Current Sections */}
               <div className="mb-6">
                 <h4 className="text-md font-semibold text-gray-300 mb-3">
                   Current Sections
@@ -2199,7 +2594,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                         <ArrowDown className="w-4 h-4" />
                       </Button>
 
-                      {/* DELETE button disabled for personal */}
                       {section !== "personal" && (
                         <Button
                           size="sm"
@@ -2214,7 +2608,6 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
                 ))}
               </div>
 
-              {/* Add Back Sections */}
               <div>
                 <h4 className="text-md font-semibold text-gray-300 mb-3">
                   Add Sections Back
@@ -2222,22 +2615,21 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
 
                 <div className="grid grid-cols-2 gap-2">
                   {availableSections
-                    .filter((section) => !sectionOrder.includes(section.id))
-                    .map((section) => (
+                    .filter((s) => !sectionOrder.includes(s.id))
+                    .map((s) => (
                       <Button
-                        key={section.id}
-                        onClick={() => addPredefinedSection(section.id)}
+                        key={s.id}
+                        onClick={() => addPredefinedSection(s.id)}
                         className="bg-green-600 hover:bg-green-700 text-white gap-2 justify-start"
                       >
-                        <span>{section.icon}</span>
-                        <span>{section.label}</span>
+                        <span>{s.icon}</span>
+                        <span>{s.label}</span>
                       </Button>
                     ))}
                 </div>
 
-                {availableSections.filter(
-                  (section) => !sectionOrder.includes(section.id)
-                ).length === 0 && (
+                {availableSections.filter((s) => !sectionOrder.includes(s.id))
+                  .length === 0 && (
                   <p className="text-gray-400 text-sm">
                     All standard sections are already added
                   </p>
