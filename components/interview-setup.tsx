@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { AlertCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
-export default function InterviewSetup({ onStartInterview }: any) {
+export default function InterviewSetup({ onStartInterview }: { onStartInterview: (config: any) => void }) {
   const [step, setStep] = useState(1)
   const [config, setConfig] = useState({
     position: "",
@@ -35,10 +35,10 @@ export default function InterviewSetup({ onStartInterview }: any) {
   const timeLimits = ["30 mins", "45 mins", "1 hour", "90 mins"]
 
   const practiceOptions = [
-    { value: "coding", label: "Coding Questions Only" },
-    { value: "technical", label: "Technical Questions Only" },
-    { value: "system-design", label: "System Design Only" },
-    { value: "behavioral", label: "Behavioral Questions Only" },
+    { value: "coding", label: "Coding Questions" },
+    { value: "technical", label: "Technical Questions" },
+    { value: "system-design", label: "System Design" },
+    { value: "behavioral", label: "Behavioral Questions" },
     { value: "mixed", label: "Mix of Everything" },
   ]
 
@@ -92,9 +92,9 @@ export default function InterviewSetup({ onStartInterview }: any) {
       <div className="mb-8">
         <div className="flex justify-between mb-4">
           {[1, 2, 3].map((s) => (
-            <div key={s} className="flex flex-col items-center">
+            <div key={s} className="flex flex-col items-center flex-1">
               <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
+                className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all ${
                   s <= step ? "bg-cyan-500 text-black" : "bg-slate-700 text-gray-300"
                 }`}
               >
@@ -142,7 +142,7 @@ export default function InterviewSetup({ onStartInterview }: any) {
                 </SelectTrigger>
                 <SelectContent className="bg-slate-700 border-slate-600">
                   {["0-1", "1-3", "3-5", "5-7", "7-10", "10+"].map((range) => (
-                    <SelectItem key={range} value={range} className="text-white">
+                    <SelectItem key={range} value={range} className="text-white hover:bg-slate-600">
                       {range} years
                     </SelectItem>
                   ))}
@@ -161,7 +161,7 @@ export default function InterviewSetup({ onStartInterview }: any) {
                 </SelectTrigger>
                 <SelectContent className="bg-slate-700 border-slate-600">
                   {interviewTypes.map((type) => (
-                    <SelectItem key={type.value} value={type.value} className="text-white">
+                    <SelectItem key={type.value} value={type.value} className="text-white hover:bg-slate-600">
                       {type.label}
                     </SelectItem>
                   ))}
@@ -191,7 +191,7 @@ export default function InterviewSetup({ onStartInterview }: any) {
                 </SelectTrigger>
                 <SelectContent className="bg-slate-700 border-slate-600">
                   {timeLimits.map((time) => (
-                    <SelectItem key={time} value={time} className="text-white">
+                    <SelectItem key={time} value={time} className="text-white hover:bg-slate-600">
                       {time}
                     </SelectItem>
                   ))}
@@ -230,7 +230,7 @@ export default function InterviewSetup({ onStartInterview }: any) {
           </div>
 
           <div className="flex justify-between gap-3 mt-8">
-            <Button onClick={handleBack} variant="outline" className="text-gray-300 bg-transparent">
+            <Button onClick={handleBack} variant="outline" className="text-gray-300 bg-transparent hover:bg-slate-700">
               Back
             </Button>
             <Button onClick={handleNext} className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold">
@@ -255,13 +255,12 @@ export default function InterviewSetup({ onStartInterview }: any) {
               />
             </div>
             <p className="text-sm text-gray-400">
-              The AI will research common questions from {config.company || "your target"} company to provide relevant
-              practice questions.
+              The AI will use this information to ask relevant questions tailored to {config.company || "your target company"}.
             </p>
           </div>
 
           <div className="flex justify-between gap-3 mt-8">
-            <Button onClick={handleBack} variant="outline" className="text-gray-300 bg-transparent">
+            <Button onClick={handleBack} variant="outline" className="text-gray-300 bg-transparent hover:bg-slate-700">
               Back
             </Button>
             <Button onClick={handleStart} className="bg-green-600 hover:bg-green-700 text-white font-bold">
