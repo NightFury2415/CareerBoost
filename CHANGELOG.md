@@ -18,17 +18,14 @@
 ```diff
 # Before:
 # Local environment variables for development
-# Add your OpenRouter API key below. Do NOT commit this file.
+# Add your API key below. Do NOT commit this file.
 # Example:
-
-OPENROUTER_API_KEY=sk-or-v1-...
 
 # After:
 # Local environment variables for development
 # Add your API keys below. Do NOT commit this file.
 
 HUGGINGFACE_API_KEY=
-OPENROUTER_API_KEY=sk-or-v1-...
 ```
 
 **Why:** Added Hugging Face API key needed for AI integration

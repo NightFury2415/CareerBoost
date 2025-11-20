@@ -51,11 +51,10 @@ All required dependencies are already listed in `package.json`:
 
 ### 2. Environment Setup
 
-Your `.env.local` file is already configured with:
+Your `.env.local` file should contain your Hugging Face API key:
 
 ```env
 HUGGINGFACE_API_KEY=
-OPENROUTER_API_KEY=
 ```
 
 **Important:** `.env.local` is already in `.gitignore` - never commit this file!
@@ -284,9 +283,6 @@ npx shadcn-ui@latest add alert
 # Hugging Face API Key (Required)
 # Get from: https://huggingface.co/settings/tokens
 HUGGINGFACE_API_KEY=your_key_here
-
-# OpenRouter API Key (Optional)
-OPENROUTER_API_KEY=your_key_here
 ```
 
 ## 🚀 Production Deployment
@@ -313,7 +309,6 @@ vercel deploy
 Configure environment variables in Vercel dashboard:
 
 - `HUGGINGFACE_API_KEY`
-- `OPENROUTER_API_KEY`
 
 ## 📚 Resources
 

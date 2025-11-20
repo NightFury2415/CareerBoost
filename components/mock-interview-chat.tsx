@@ -37,6 +37,7 @@ export default function MockInterviewChat({
   const [interviewEnded, setInterviewEnded] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const timerRef = useRef<NodeJS.Timeout>()
+  const initialQuestionRequestedRef = useRef(false)
 
   // Parse time limit
   const timeLimitMinutes = parseInt(config.timeLimit.split(" ")[0])
@@ -65,8 +66,13 @@ export default function MockInterviewChat({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
-  // Initial setup - Generate first question
+  // Initial setup - Generate first question (guarded to avoid double calls in StrictMode)
   useEffect(() => {
+    if (initialQuestionRequestedRef.current) {
+      console.log('Initial question already requested; skipping duplicate call')
+      return
+    }
+    initialQuestionRequestedRef.current = true
     generateInitialQuestion()
   }, [])
 

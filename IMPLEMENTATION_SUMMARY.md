@@ -12,7 +12,6 @@ Your Next.js CareerBoost application has been successfully configured to work wi
 
 ```env
 HUGGINGFACE_API_KEY=
-OPENROUTER_API_KEY=
 ```
 
 - ✅ Added Hugging Face API key
