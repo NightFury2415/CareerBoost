@@ -186,7 +186,7 @@ export default function MockInterviewChat({
       console.error("Error:", error)
       setMessages((prev) => [...prev, { 
         role: "assistant", 
-        content: "Thank you for that answer. Could you elaborate more on your experience with this?",
+        content: "There is some error fetching the API key, Thank you for that answer. Could you elaborate more on your experience with this?",
         timestamp: new Date()
       }])
     } finally {
