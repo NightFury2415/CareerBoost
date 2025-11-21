@@ -1,18 +1,32 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Card } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { AlertCircle } from "lucide-react"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
-export default function InterviewSetup({ onStartInterview }: { onStartInterview: (config: any) => void }) {
-  const [step, setStep] = useState(1)
+export default function InterviewSetup({
+  onStartInterview,
+}: {
+  onStartInterview: (config: any) => void;
+}) {
+  const [step, setStep] = useState(0);
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [resumeBase64, setResumeBase64] = useState<string>("");
+
   const [config, setConfig] = useState({
+    resume: "",
     position: "",
     experience: "",
     interviewType: "",
@@ -20,9 +34,9 @@ export default function InterviewSetup({ onStartInterview }: { onStartInterview:
     practiceTypes: [] as string[],
     jobDescription: "",
     company: "",
-  })
+  });
 
-  const [errors, setErrors] = useState<string[]>([])
+  const [errors, setErrors] = useState<string[]>([]);
 
   const interviewTypes = [
     { value: "technical", label: "Technical Interview" },
@@ -30,9 +44,9 @@ export default function InterviewSetup({ onStartInterview }: { onStartInterview:
     { value: "system-design", label: "System Design" },
     { value: "coding", label: "Coding Round" },
     { value: "mixed", label: "Mixed (All Types)" },
-  ]
+  ];
 
-  const timeLimits = ["30 mins", "45 mins", "1 hour", "90 mins"]
+  const timeLimits = ["30 mins", "45 mins", "1 hour", "90 mins"];
 
   const practiceOptions = [
     { value: "coding", label: "Coding Questions" },
@@ -40,43 +54,57 @@ export default function InterviewSetup({ onStartInterview }: { onStartInterview:
     { value: "system-design", label: "System Design" },
     { value: "behavioral", label: "Behavioral Questions" },
     { value: "mixed", label: "Mix of Everything" },
-  ]
+  ];
 
   const validateStep = (currentStep: number) => {
-    const newErrors: string[] = []
+    const newErrors: string[] = [];
 
-    if (currentStep === 1) {
-      if (!config.position.trim()) newErrors.push("Position name is required")
-      if (!config.experience) newErrors.push("Years of experience is required")
-      if (!config.interviewType) newErrors.push("Interview type is required")
-    } else if (currentStep === 2) {
-      if (!config.timeLimit) newErrors.push("Time limit is required")
-      if (config.practiceTypes.length === 0) newErrors.push("Select at least one practice area")
-      if (!config.jobDescription.trim()) newErrors.push("Job description is required")
-    } else if (currentStep === 3) {
-      if (!config.company.trim()) newErrors.push("Company name is required")
+    if (currentStep === 0) {
+      if (!resumeBase64)
+        newErrors.push("Please upload your resume before continuing.");
     }
 
-    setErrors(newErrors)
-    return newErrors.length === 0
-  }
+    if (currentStep === 1) {
+      if (!config.position.trim()) newErrors.push("Position name is required");
+      if (!config.experience) newErrors.push("Years of experience is required");
+      if (!config.interviewType) newErrors.push("Interview type is required");
+    }
+
+    if (currentStep === 2) {
+      if (!config.timeLimit) newErrors.push("Time limit is required");
+      if (config.practiceTypes.length === 0)
+        newErrors.push("Select at least one practice area");
+      if (!config.jobDescription.trim())
+        newErrors.push("Job description is required");
+    }
+
+    if (currentStep === 3) {
+      if (!config.company.trim()) newErrors.push("Company name is required");
+    }
+
+    setErrors(newErrors);
+    return newErrors.length === 0;
+  };
 
   const handleNext = () => {
     if (validateStep(step)) {
-      setStep(step + 1)
+      setStep(step + 1);
     }
-  }
+  };
 
   const handleBack = () => {
-    setStep(step - 1)
-    setErrors([])
-  }
+    setStep(step - 1);
+    setErrors([]);
+  };
 
   const handleStart = () => {
     if (validateStep(step)) {
-      onStartInterview(config)
+      onStartInterview({
+        ...config,
+        resume: resumeBase64,
+      });
     }
-  }
+  };
 
   const togglePracticeType = (type: string) => {
     setConfig({
@@ -84,24 +112,42 @@ export default function InterviewSetup({ onStartInterview }: { onStartInterview:
       practiceTypes: config.practiceTypes.includes(type)
         ? config.practiceTypes.filter((t) => t !== type)
         : [...config.practiceTypes, type],
-    })
-  }
+    });
+  };
+
+  const handleResumeUpload = async (file: File) => {
+    setResumeFile(file);
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setResumeBase64(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
 
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-8">
         <div className="flex justify-between mb-4">
-          {[1, 2, 3].map((s) => (
+          {[0, 1, 2, 3].map((s) => (
             <div key={s} className="flex flex-col items-center flex-1">
               <div
                 className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all ${
-                  s <= step ? "bg-cyan-500 text-black" : "bg-slate-700 text-gray-300"
+                  s <= step
+                    ? "bg-cyan-500 text-black"
+                    : "bg-slate-700 text-gray-300"
                 }`}
               >
-                {s}
+                {s + 1}
               </div>
               <span className="text-xs mt-2 text-gray-300">
-                {s === 1 ? "Setup" : s === 2 ? "Preferences" : "Company"}
+                {s === 0
+                  ? "Resume"
+                  : s === 1
+                  ? "Setup"
+                  : s === 2
+                  ? "Preferences"
+                  : "Company"}
               </span>
             </div>
           ))}
@@ -119,30 +165,81 @@ export default function InterviewSetup({ onStartInterview }: { onStartInterview:
         </Alert>
       )}
 
-      {/* Step 1: Basic Setup */}
+      {/* STEP 0 - RESUME UPLOAD */}
+      {step === 0 && (
+        <Card className="bg-slate-800/50 border-slate-700 p-8">
+          <h2 className="text-2xl font-bold mb-6 text-white">
+            Upload Your Resume
+          </h2>
+
+          <Input
+            type="file"
+            accept="application/pdf"
+            onChange={(e) =>
+              e.target.files && handleResumeUpload(e.target.files[0])
+            }
+            className="bg-slate-700 border-slate-600 text-white"
+          />
+
+          {resumeFile && (
+            <p className="text-gray-300 mt-3 text-sm">
+              Uploaded: {resumeFile.name}
+            </p>
+          )}
+
+          <div className="flex justify-end gap-3 mt-8">
+            <Button
+              onClick={handleNext}
+              className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold"
+            >
+              Next
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {/* STEP 1 - BASIC SETUP */}
       {step === 1 && (
         <Card className="bg-slate-800/50 border-slate-700 p-8">
-          <h2 className="text-2xl font-bold mb-6 text-white">Interview Setup</h2>
+          <h2 className="text-2xl font-bold mb-6 text-white">
+            Interview Setup
+          </h2>
+
           <div className="space-y-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-300 mb-2">Position Name</label>
+              <label className="block text-sm font-semibold text-gray-300 mb-2">
+                Position Name
+              </label>
               <Input
                 placeholder="e.g., Senior Software Engineer, Full Stack Developer"
                 value={config.position}
-                onChange={(e) => setConfig({ ...config, position: e.target.value })}
+                onChange={(e) =>
+                  setConfig({ ...config, position: e.target.value })
+                }
                 className="bg-slate-700 border-slate-600 text-white placeholder-gray-400"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-300 mb-2">Years of Experience</label>
-              <Select value={config.experience} onValueChange={(value) => setConfig({ ...config, experience: value })}>
+              <label className="block text-sm font-semibold text-gray-300 mb-2">
+                Years of Experience
+              </label>
+              <Select
+                value={config.experience}
+                onValueChange={(value) =>
+                  setConfig({ ...config, experience: value })
+                }
+              >
                 <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
                   <SelectValue placeholder="Select years of experience" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-700 border-slate-600">
                   {["0-1", "1-3", "3-5", "5-7", "7-10", "10+"].map((range) => (
-                    <SelectItem key={range} value={range} className="text-white hover:bg-slate-600">
+                    <SelectItem
+                      key={range}
+                      value={range}
+                      className="text-white hover:bg-slate-600"
+                    >
                       {range} years
                     </SelectItem>
                   ))}
@@ -151,17 +248,25 @@ export default function InterviewSetup({ onStartInterview }: { onStartInterview:
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-300 mb-2">Interview Type</label>
+              <label className="block text-sm font-semibold text-gray-300 mb-2">
+                Interview Type
+              </label>
               <Select
                 value={config.interviewType}
-                onValueChange={(value) => setConfig({ ...config, interviewType: value })}
+                onValueChange={(value) =>
+                  setConfig({ ...config, interviewType: value })
+                }
               >
                 <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
                   <SelectValue placeholder="Select interview type" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-700 border-slate-600">
                   {interviewTypes.map((type) => (
-                    <SelectItem key={type.value} value={type.value} className="text-white hover:bg-slate-600">
+                    <SelectItem
+                      key={type.value}
+                      value={type.value}
+                      className="text-white hover:bg-slate-600"
+                    >
                       {type.label}
                     </SelectItem>
                   ))}
@@ -170,28 +275,52 @@ export default function InterviewSetup({ onStartInterview }: { onStartInterview:
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 mt-8">
-            <Button onClick={handleNext} className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold">
+          <div className="flex justify-between gap-3 mt-8">
+            <Button
+              onClick={handleBack}
+              variant="outline"
+              className="text-gray-300 bg-transparent hover:bg-slate-700"
+            >
+              Back
+            </Button>
+            <Button
+              onClick={handleNext}
+              className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold"
+            >
               Next
             </Button>
           </div>
         </Card>
       )}
 
-      {/* Step 2: Preferences */}
+      {/* STEP 2 — INTERVIEW PREFERENCES */}
       {step === 2 && (
         <Card className="bg-slate-800/50 border-slate-700 p-8">
-          <h2 className="text-2xl font-bold mb-6 text-white">Interview Preferences</h2>
+          <h2 className="text-2xl font-bold mb-6 text-white">
+            Interview Preferences
+          </h2>
+
           <div className="space-y-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-300 mb-2">Time Limit</label>
-              <Select value={config.timeLimit} onValueChange={(value) => setConfig({ ...config, timeLimit: value })}>
+              <label className="block text-sm font-semibold text-gray-300 mb-2">
+                Time Limit
+              </label>
+              <Select
+                value={config.timeLimit}
+                onValueChange={(value) =>
+                  setConfig({ ...config, timeLimit: value })
+                }
+              >
                 <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
                   <SelectValue placeholder="Select time limit" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-700 border-slate-600">
                   {timeLimits.map((time) => (
-                    <SelectItem key={time} value={time} className="text-white hover:bg-slate-600">
+                    <SelectItem
+                      key={time}
+                      value={time}
+                      className="text-white hover:bg-slate-600"
+                    >
                       {time}
                     </SelectItem>
                   ))}
@@ -200,7 +329,9 @@ export default function InterviewSetup({ onStartInterview }: { onStartInterview:
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-300 mb-4">What would you like to practice?</label>
+              <label className="block text-sm font-semibold text-gray-300 mb-4">
+                What would you like to practice?
+              </label>
               <div className="space-y-3">
                 {practiceOptions.map((option) => (
                   <div key={option.value} className="flex items-center">
@@ -210,7 +341,10 @@ export default function InterviewSetup({ onStartInterview }: { onStartInterview:
                       onCheckedChange={() => togglePracticeType(option.value)}
                       className="border-slate-500"
                     />
-                    <label htmlFor={option.value} className="ml-3 cursor-pointer text-gray-300">
+                    <label
+                      htmlFor={option.value}
+                      className="ml-3 cursor-pointer text-gray-300"
+                    >
                       {option.label}
                     </label>
                   </div>
@@ -219,56 +353,82 @@ export default function InterviewSetup({ onStartInterview }: { onStartInterview:
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-300 mb-2">Job Description</label>
+              <label className="block text-sm font-semibold text-gray-300 mb-2">
+                Job Description
+              </label>
               <Textarea
                 placeholder="Paste the job description here to tailor the interview to the role..."
                 value={config.jobDescription}
-                onChange={(e) => setConfig({ ...config, jobDescription: e.target.value })}
+                onChange={(e) =>
+                  setConfig({ ...config, jobDescription: e.target.value })
+                }
                 className="bg-slate-700 border-slate-600 text-white placeholder-gray-400 min-h-32"
               />
             </div>
           </div>
 
           <div className="flex justify-between gap-3 mt-8">
-            <Button onClick={handleBack} variant="outline" className="text-gray-300 bg-transparent hover:bg-slate-700">
+            <Button
+              onClick={handleBack}
+              variant="outline"
+              className="text-gray-300 bg-transparent hover:bg-slate-700"
+            >
               Back
             </Button>
-            <Button onClick={handleNext} className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold">
+            <Button
+              onClick={handleNext}
+              className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold"
+            >
               Next
             </Button>
           </div>
         </Card>
       )}
 
-      {/* Step 3: Company */}
+      {/* STEP 3 — COMPANY INFO */}
       {step === 3 && (
         <Card className="bg-slate-800/50 border-slate-700 p-8">
-          <h2 className="text-2xl font-bold mb-6 text-white">Company Information</h2>
+          <h2 className="text-2xl font-bold mb-6 text-white">
+            Company Information
+          </h2>
+
           <div className="space-y-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-300 mb-2">Company Name</label>
+              <label className="block text-sm font-semibold text-gray-300 mb-2">
+                Company Name
+              </label>
               <Input
                 placeholder="e.g., Google, Amazon, Meta"
                 value={config.company}
-                onChange={(e) => setConfig({ ...config, company: e.target.value })}
+                onChange={(e) =>
+                  setConfig({ ...config, company: e.target.value })
+                }
                 className="bg-slate-700 border-slate-600 text-white placeholder-gray-400"
               />
             </div>
             <p className="text-sm text-gray-400">
-              The AI will use this information to ask relevant questions tailored to {config.company || "your target company"}.
+              The AI will use this information to ask relevant questions
+              tailored to {config.company || "your target company"}.
             </p>
           </div>
 
           <div className="flex justify-between gap-3 mt-8">
-            <Button onClick={handleBack} variant="outline" className="text-gray-300 bg-transparent hover:bg-slate-700">
+            <Button
+              onClick={handleBack}
+              variant="outline"
+              className="text-gray-300 bg-transparent hover:bg-slate-700"
+            >
               Back
             </Button>
-            <Button onClick={handleStart} className="bg-green-600 hover:bg-green-700 text-white font-bold">
+            <Button
+              onClick={handleStart}
+              className="bg-green-600 hover:bg-green-700 text-white font-bold"
+            >
               Start Interview
             </Button>
           </div>
         </Card>
       )}
     </div>
-  )
+  );
 }
