@@ -687,8 +687,10 @@ export default function ResumePreview({ data }: any) {
         >
           {data.personal.location && (
             <span
+              className="inline-icon"
               style={{
                 display: "flex",
+                alignItems: "center",
                 gap: "3px",
                 fontSize: `${getFontSize("location", "personal")}px`,
               }}
@@ -700,8 +702,10 @@ export default function ResumePreview({ data }: any) {
 
           {data.personal.phone && (
             <span
+              className="inline-icon"
               style={{
                 display: "flex",
+                alignItems: "center",
                 gap: "3px",
                 fontSize: `${getFontSize("phone", "personal")}px`,
               }}
@@ -713,8 +717,10 @@ export default function ResumePreview({ data }: any) {
 
           {data.personal.email && (
             <span
+              className="inline-icon"
               style={{
                 display: "flex",
+                alignItems: "center",
                 gap: "3px",
                 fontSize: `${getFontSize("email", "personal")}px`,
               }}
@@ -737,8 +743,10 @@ export default function ResumePreview({ data }: any) {
         >
           {data.personal.website && (
             <span
+              className="inline-icon"
               style={{
                 display: "flex",
+                alignItems: "center",
                 gap: "3px",
                 fontSize: `${getFontSize("website", "personal")}px`,
               }}
@@ -753,8 +761,10 @@ export default function ResumePreview({ data }: any) {
 
           {data.personal.linkedin && (
             <span
+              className="inline-icon"
               style={{
                 display: "flex",
+                alignItems: "center",
                 gap: "3px",
                 fontSize: `${getFontSize("linkedin", "personal")}px`,
               }}
@@ -769,8 +779,10 @@ export default function ResumePreview({ data }: any) {
 
           {data.personal.github && (
             <span
+              className="inline-icon"
               style={{
                 display: "flex",
+                alignItems: "center",
                 gap: "3px",
                 fontSize: `${getFontSize("github", "personal")}px`,
               }}
@@ -802,6 +814,7 @@ export default function ResumePreview({ data }: any) {
                 key={key}
                 style={{
                   display: "flex",
+                  alignItems: "center",
                   gap: "3px",
                   fontSize: `${getFontSize(key, "personal")}px`,
                 }}

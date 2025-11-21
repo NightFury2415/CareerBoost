@@ -61,7 +61,8 @@ export default function ResumeBuilder() {
     ],
   });
 
-  // ✅ PDF Export (uses ResumePreview content directly — no injected header)
+  // ✅ PDF Export (uses ResumePreview content directly -> no injected header)
+
   const downloadResume = async () => {
     const element = document.getElementById("resume-preview");
     if (!element) return;
@@ -80,7 +81,7 @@ export default function ResumeBuilder() {
     const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
     if (!iframeDoc) return;
 
-    // Clean stylesheet — no duplicate header injected
+    // Clean stylesheet with icon alignment fix
     iframeDoc.open();
     iframeDoc.write(`
       <html>
@@ -99,7 +100,9 @@ export default function ResumeBuilder() {
               font-family: 'Helvetica', 'Arial', sans-serif;
               color: #111;
               line-height: 1.6;
-              padding: 24px 36px;
+              /* extra bottom padding to avoid pixel-level cropping in exported PDF */
+              padding: 24px 36px 44px 36px;
+              box-sizing: border-box;
               transform: scale(0.97);
               transform-origin: top center;
               text-align: left;
@@ -144,11 +147,49 @@ export default function ResumeBuilder() {
               margin: 10px 0;
             }
 
-            /* Ensure all fits within one page */
+            /* FIX: Icon alignment - make icons visible and prevent cropping */
+            svg {
+              vertical-align: middle;
+              position: relative;
+              top: 1px; /* small baseline offset */
+              display: inline-block;
+              overflow: visible; /* allow strokes outside bounding box */
+              /* slightly smaller icons to reduce visual weight */
+              height: 0.92em;
+              width: auto;
+              max-height: 1.05em;
+              /* nudge icons slightly down so they sit lower than adjacent text */
+              transform: translateY(1px);
+            }
+
+            /* Add extra line height to spans containing icons to prevent cropping */
+            span[style*="display: flex"], span[style*="display:flex"] {
+              line-height: 1.5 !important; /* increase if needed (1.6) */
+              align-items: flex-end !important; /* push icons lower relative to text baseline */
+              padding-top: 0.06em; /* small padding to avoid clipping at top */
+              padding-bottom: 0.1em; /* increased bottom padding to prevent pixel cropping */
+            }
+
+            /* Also ensure inline containers that might hold icons have sufficient line-height */
+            p, li, .flex, .inline-icon {
+              line-height: 1.45;
+            }
+
+            /* Helper class: use on icon containers if needed */
+            .inline-icon {
+              display: inline-flex;
+              align-items: flex-end; /* icons sit slightly lower than text */
+              padding-top: 0.06em;
+              padding-bottom: 0.1em; /* increased to ensure no bottom clipping */
+              overflow: visible;
+            }
+
+            /* Ensure all fits within one page but allow icon overflow to be visible */
             .content-wrapper {
               height: 100%;
-              overflow: hidden;
+              overflow: visible; /* allow icons to render without being clipped */
               page-break-inside: avoid;
+              padding-bottom: 2px; /* small safe zone at bottom of resume content */
             }
           </style>
         </head>
