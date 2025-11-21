@@ -197,7 +197,7 @@ QUESTION RULES:
           model: "meta-llama/Llama-3.1-8B-Instruct",
           messages: conversationMessages,
           temperature: 0.6,
-          max_tokens: 300,
+          max_tokens: 500,
         },
         { signal: controller.signal }
       );

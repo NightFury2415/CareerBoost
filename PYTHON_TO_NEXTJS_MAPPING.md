@@ -137,7 +137,7 @@ client = InferenceClient(api_key=api_key)
 
 def get_ai_response(messages):
     response = client.chat.completions.create(
-        model="MiniMaxAI/MiniMax-M2",
+        model="", # subject to change
         messages=messages
     )
     return response.choices[0].message["content"]

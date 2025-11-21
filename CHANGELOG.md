@@ -42,7 +42,7 @@ HUGGINGFACE_API_KEY=
 ```diff
 # Before:
 const HF_API_KEY = process.env.HUGGINGFACE_API_KEY
-const HF_API_URL = 'https://api-inference.huggingface.co/models/MiniMaxAI/MiniMax-M2/v1/chat/completions'
+const HF_API_URL = 'https://api-inference.huggingface.co/models/modelname/v1/chat/completions'
 
 # After:
 const HF_API_KEY = process.env.HUGGINGFACE_API_KEY

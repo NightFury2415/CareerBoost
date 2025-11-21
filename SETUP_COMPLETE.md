@@ -183,7 +183,7 @@ Next.js implementation:
 
 | Aspect              | Python                | Next.js               |
 | ------------------- | --------------------- | --------------------- |
-| **Model**           | MiniMaxAI/MiniMax-M2  | mistralai/Mistral-7B  |
+| **Model**           | Model Name            | Model Provider        |
 | **API**             | HuggingFace Inference | HuggingFace Inference |
 | **Interface**       | CLI/Terminal          | Web UI                |
 | **Conversation**    | CLI loop              | Chat interface        |
