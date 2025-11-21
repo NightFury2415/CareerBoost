@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
       interviewSources["mixed"];
 
     // ☀️ WARM-UP QUESTIONS (only asked once)
-const warmupQuestions = [
+const warmups = [
   "Hey! How are you doing today?",
   "Before we begin, how has your day been?",
   "What have you been up to recently?",
