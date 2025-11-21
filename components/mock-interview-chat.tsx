@@ -24,14 +24,7 @@ interface InterviewConfig {
 }
 
 const END_KEYWORDS = [
-  "end",
-  "stop",
-  "quit",
-  "exit",
-  "finish",
-  "end interview",
-  "terminate",
-  "cancel",
+
   "stop interview",
 ];
 
@@ -77,7 +70,8 @@ export default function MockInterviewChat({
 
   // Scroll to bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Auto-scrolling disabled to prevent unwanted page scrolling
+    // messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   // Initial warm-up question request

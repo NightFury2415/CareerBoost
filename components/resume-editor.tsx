@@ -167,12 +167,13 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
 
   useEffect(() => {
     if (!tabsScrollContainerRef.current) return;
-    setTimeout(() => {
-      const el = tabsScrollContainerRef.current!.querySelector(
-        `[data-state="active"], [aria-selected="true"]`
-      ) as HTMLElement | null;
-      if (el) el.scrollIntoView({ behavior: "smooth", inline: "center" });
-    }, 50);
+    // Auto-scrolling disabled to prevent unwanted page scrolling
+    // setTimeout(() => {
+    //   const el = tabsScrollContainerRef.current!.querySelector(
+    //     `[data-state="active"], [aria-selected="true"]`
+    //   ) as HTMLElement | null;
+    //   if (el) el.scrollIntoView({ behavior: "smooth", inline: "center" });
+    // }, 50);
   }, [activeTab]);
 
   const updateSectionOrder = (newOrder: string[]) => {
