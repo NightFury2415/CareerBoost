@@ -6,6 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Send, Loader, Download } from "lucide-react";
 
+// 🔊 Hooks (provided later)
+import useRecorder from "@/hooks/useRecorder";
+import useTTS from "@/hooks/useTTS";
+import useSTT from "@/hooks/useSTT";
+
 interface Message {
   role: "user" | "assistant";
   content: string;
@@ -21,12 +26,10 @@ interface InterviewConfig {
   jobDescription: string;
   timeLimit: string;
   practiceTypes: string[];
+  voiceMode: boolean;
 }
 
-const END_KEYWORDS = [
-
-  "stop interview",
-];
+const END_KEYWORDS = ["stop interview"];
 
 export default function MockInterviewChat({
   config,
@@ -35,6 +38,7 @@ export default function MockInterviewChat({
   config: InterviewConfig;
   onEndInterview: () => void;
 }) {
+  // ---------- STATE ----------
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -43,50 +47,46 @@ export default function MockInterviewChat({
   const [interviewEnded, setInterviewEnded] = useState(false);
   const [warmupComplete, setWarmupComplete] = useState(false);
 
+  // 🎙️ Voice
+  const { isRecording, audioBlob, startRecording, stopRecording, clearAudio } =
+    useRecorder();
+  const { speakText } = useTTS();
+  const { transcribeAudio } = useSTT();
+
+  // ---------- REFS ----------
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<NodeJS.Timeout>();
-  const initialQuestionRequestedRef = useRef(false);
   const askedQuestionsRef = useRef<string[]>([]);
+  const initialQuestionRef = useRef(false);
 
-  // Parse time limit
+  // ---------- TIME ----------
   const timeLimitMinutes = parseInt(config.timeLimit.split(" ")[0]);
   const totalSeconds = timeLimitMinutes * 60;
 
-  // Timer
   useEffect(() => {
     timerRef.current = setInterval(() => {
-      setElapsedTime((prev) => {
-        if (prev >= totalSeconds) {
-          if (timerRef.current) clearInterval(timerRef.current);
+      setElapsedTime((p) => {
+        if (p >= totalSeconds) {
+          clearInterval(timerRef.current);
           handleTimeUp();
-          return prev;
+          return p;
         }
-        return prev + 1;
+        return p + 1;
       });
     }, 1000);
-
-    return () => timerRef.current && clearInterval(timerRef.current);
+    return () => clearInterval(timerRef.current);
   }, [totalSeconds]);
 
-  // Scroll to bottom
+  // ---------- INIT QUESTION ----------
   useEffect(() => {
-    // Auto-scrolling disabled to prevent unwanted page scrolling
-    // messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  // Initial warm-up question request
-  useEffect(() => {
-    if (initialQuestionRequestedRef.current) return;
-    initialQuestionRequestedRef.current = true;
+    if (initialQuestionRef.current) return;
+    initialQuestionRef.current = true;
     requestWarmup();
   }, []);
 
-  // -----------------------------------------
-  // ⭐ REQUEST WARM-UP QUESTION
-  // -----------------------------------------
+  // ---------- WARMUP ----------
   const requestWarmup = async () => {
     setLoading(true);
-
     try {
       const res = await fetch("/api/interview/chat", {
         method: "POST",
@@ -98,190 +98,177 @@ export default function MockInterviewChat({
           isFirstMessage: true,
         }),
       });
-
       const data = await res.json();
-
-      setMessages([
-        {
-          role: "assistant",
-          content: data.question,
-          timestamp: new Date(),
-        },
-      ]);
-
-      setWarmupComplete(false);
-      setQuestionCount(0);
+      const question = data.question;
+      const msg = {
+        role: "assistant",
+        content: question,
+        timestamp: new Date(),
+      };
+      setMessages([msg]);
+      if (config.voiceMode) await speakText(question);
     } catch {
+      const fallback = "Hey! How are you doing today?";
       setMessages([
-        {
-          role: "assistant",
-          content: "Hey! How are you doing today?",
-          timestamp: new Date(),
-        },
+        { role: "assistant", content: fallback, timestamp: new Date() },
       ]);
+      if (config.voiceMode) await speakText(fallback);
     }
-
+    setWarmupComplete(false);
+    setQuestionCount(0);
     setLoading(false);
   };
 
-  // -----------------------------------------
-  // ⭐ SEND USER MESSAGE
-  // -----------------------------------------
-  const handleSendMessage = async () => {
-    if (!input.trim() || loading || interviewEnded) return;
+  // ---------- SEND MESSAGE ----------
+  const handleSendMessage = async (forcedText?: string) => {
+    if (loading || interviewEnded) return;
+    const text = forcedText || input.trim();
+    if (!text) return;
 
-    const userMessage = input.trim();
     setInput("");
-
-    const newUserMessage: Message = {
+    const userMsg: Message = {
       role: "user",
-      content: userMessage,
+      content: text,
       timestamp: new Date(),
     };
+    setMessages((p) => [...p, userMsg]);
 
-    setMessages((prev) => [...prev, newUserMessage]);
-
-    // Auto-end logic
-    if (END_KEYWORDS.some((kw) => userMessage.toLowerCase().includes(kw))) {
+    if (END_KEYWORDS.some((kw) => text.toLowerCase().includes(kw))) {
       setInterviewEnded(true);
-
-      const finalMessage: Message = {
+      const final: Message = {
         role: "assistant",
         content: "Interview ended by your request. Downloading transcript...",
         timestamp: new Date(),
       };
-
-      setMessages((prev) => [...prev, finalMessage]);
+      setMessages((p) => [...p, final]);
       autoDownloadTranscript();
-      setTimeout(() => onEndInterview(), 1500);
+      setTimeout(onEndInterview, 1200);
       return;
     }
 
-    // If warmup not done, now do real first question
     if (!warmupComplete) {
       setWarmupComplete(true);
-      requestRealQuestion([...messages, newUserMessage]);
-      return;
-    }
-
-    // Normal conversation
-    requestRealQuestion([...messages, newUserMessage]);
+      requestRealQuestion([...messages, userMsg]);
+    } else requestRealQuestion([...messages, userMsg]);
   };
 
-  // -----------------------------------------
-  // ⭐ REQUEST REAL INTERVIEW QUESTION
-  // -----------------------------------------
-  const requestRealQuestion = async (updatedMessages: Message[]) => {
-    setLoading(true);
+  // ---------- STT ----------
+  // 🎙️ When new audio is ready, transcribe it — but don't auto-send
+  useEffect(() => {
+    if (!audioBlob) return;
+    (async () => {
+      try {
+        const transcript = await transcribeAudio(audioBlob);
+        if (transcript) {
+          setInput(transcript); // 🧠 show transcript in input box
+        }
+      } catch (err) {
+        console.error("Speech-to-text failed:", err);
+        alert("Could not transcribe your speech. Try again.");
+      } finally {
+        clearAudio();
+      }
+    })();
+  }, [audioBlob]);
 
+  // ---------- REAL QUESTION ----------
+  const requestRealQuestion = async (updated: Message[]) => {
+    setLoading(true);
     try {
       const res = await fetch("/api/interview/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...config,
-          messages: updatedMessages.map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
+          messages: updated.map((m) => ({ role: m.role, content: m.content })),
           askedQuestions: askedQuestionsRef.current,
           isFirstMessage: false,
         }),
       });
-
       const data = await res.json();
       const question = data.question;
-
       askedQuestionsRef.current.push(question);
-
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: question, timestamp: new Date() },
-      ]);
-
-      setQuestionCount((prev) => prev + 1);
+      const aiMsg: Message = {
+        role: "assistant",
+        content: question,
+        timestamp: new Date(),
+      };
+      setMessages((p) => [...p, aiMsg]);
+      if (config.voiceMode) await speakText(question);
+      setQuestionCount((p) => p + 1);
     } catch {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content:
-            "Thank you for your answer. Could you explain that a bit more?",
-          timestamp: new Date(),
-        },
+      const fallback =
+        "Thank you for your answer. Could you explain that a bit more?";
+      setMessages((p) => [
+        ...p,
+        { role: "assistant", content: fallback, timestamp: new Date() },
       ]);
+      if (config.voiceMode) await speakText(fallback);
     }
-
     setLoading(false);
   };
 
-  // -----------------------------------------
-  // ⭐ AUTO DOWNLOAD TRANSCRIPT
-  // -----------------------------------------
+  // ---------- TRANSCRIPT ----------
   const autoDownloadTranscript = () => {
-    let transcript = `Interview Transcript\n====================\n\n`;
-    transcript += `Position: ${config.position}\n`;
-    transcript += `Company: ${config.company}\n`;
-    transcript += `Interview Type: ${config.interviewType}\n`;
-    transcript += `Experience: ${config.experience} years\n`;
-    transcript += `Date: ${new Date().toLocaleString()}\n\n`;
-    transcript += `====================\n\n`;
-
-    messages.forEach((msg) => {
-      const speaker = msg.role === "assistant" ? "AI Interviewer" : "Candidate";
-
-      transcript += `${speaker}: ${msg.content}\n\n`;
+    let text = `Interview Transcript\n====================\n\n`;
+    text += `Position: ${config.position}\nCompany: ${config.company}\n`;
+    text += `Type: ${config.interviewType}\nExperience: ${config.experience}\n`;
+    text += `Date: ${new Date().toLocaleString()}\n\n`;
+    messages.forEach((m) => {
+      const who = m.role === "assistant" ? "AI Interviewer" : "Candidate";
+      text += `${who}: ${m.content}\n\n`;
     });
-
-    const blob = new Blob([transcript], { type: "text/plain" });
+    const blob = new Blob([text], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `interview_transcript_${Date.now()}.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `interview_${Date.now()}.txt`;
+    a.click();
     URL.revokeObjectURL(url);
   };
 
-  // -----------------------------------------
-  // ⭐ TIME-UP LOGIC
-  // -----------------------------------------
   const handleTimeUp = () => {
-    if (!interviewEnded) {
-      setInterviewEnded(true);
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: "Time is up! Downloading your transcript.",
-          timestamp: new Date(),
-        },
-      ]);
-
-      autoDownloadTranscript();
-    }
+    if (interviewEnded) return;
+    setInterviewEnded(true);
+    setMessages((p) => [
+      ...p,
+      {
+        role: "assistant",
+        content: "Time is up! Downloading your transcript.",
+        timestamp: new Date(),
+      },
+    ]);
+    autoDownloadTranscript();
   };
 
-  // -----------------------------------------
-  // ⭐ HELPER — FORMAT TIMER
-  // -----------------------------------------
+  // ---------- MIC BUTTON ----------
+  const MicButton = () => (
+    <div className="flex justify-center my-4">
+      <button
+        onClick={() => (isRecording ? stopRecording() : startRecording())}
+        className={`w-16 h-16 rounded-full flex items-center justify-center transition-all shadow-xl ${
+          isRecording
+            ? "bg-red-600 animate-pulse shadow-red-500/50"
+            : "bg-cyan-600 hover:bg-cyan-700 shadow-cyan-500/40"
+        }`}
+      >
+        <span className="text-white text-xl font-bold">
+          {isRecording ? "●" : "🎤"}
+        </span>
+      </button>
+    </div>
+  );
+
+  // ---------- TIMER ----------
   const timeRemaining = totalSeconds - elapsedTime;
-  const timePercentage = (elapsedTime / totalSeconds) * 100;
+  const percent = (elapsedTime / totalSeconds) * 100;
+  const format = (s: number) =>
+    `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
-
-  // -----------------------------------------
-  // ⭐ RENDER
-  // -----------------------------------------
+  // ---------- RENDER ----------
   return (
     <div className="max-w-4xl mx-auto h-screen flex flex-col p-4">
-      {/* Header */}
+      {/* HEADER */}
       <Card className="bg-slate-800/50 border-slate-700 p-4 mb-4 shadow-lg">
         <div className="flex justify-between items-center flex-wrap gap-4">
           <div>
@@ -290,7 +277,6 @@ export default function MockInterviewChat({
               {config.company} • {config.interviewType}
             </p>
           </div>
-
           <div className="flex items-center gap-4">
             <div className="text-right">
               <p className="text-xs text-gray-400">Time Remaining</p>
@@ -301,68 +287,63 @@ export default function MockInterviewChat({
                     : "text-cyan-400"
                 }`}
               >
-                {formatTime(timeRemaining)}
+                {format(timeRemaining)}
               </p>
             </div>
-
             <div className="w-32 bg-slate-700 rounded-full h-2">
               <div
                 className={`h-2 rounded-full transition-all ${
-                  timePercentage > 80 ? "bg-red-500" : "bg-cyan-500"
+                  percent > 80 ? "bg-red-500" : "bg-cyan-500"
                 }`}
-                style={{ width: `${Math.min(timePercentage, 100)}%` }}
+                style={{ width: `${Math.min(percent, 100)}%` }}
               />
             </div>
-
             <Button
               onClick={autoDownloadTranscript}
               variant="outline"
-              className="text-cyan-400 hover:text-cyan-300 bg-transparent border-cyan-400 gap-2"
-              disabled={messages.length === 0}
+              className="text-cyan-400 border-cyan-400"
+              disabled={!messages.length}
             >
-              <Download className="w-4 h-4" /> Transcript
+              <Download className="w-4 h-4 mr-2" />
+              Transcript
             </Button>
-
             <Button
               onClick={() => {
                 autoDownloadTranscript();
                 onEndInterview();
               }}
               variant="outline"
-              className="text-red-400 hover:text-red-300 bg-transparent border-red-400"
+              className="text-red-400 border-red-400"
             >
-              End Interview
+              End
             </Button>
           </div>
         </div>
       </Card>
 
-      {/* Messages */}
+      {/* MESSAGES */}
       <div className="flex-1 overflow-y-auto mb-4 space-y-4 bg-slate-900/30 rounded-lg p-4">
-        {messages.map((msg, idx) => (
+        {messages.map((m, i) => (
           <div
-            key={idx}
+            key={i}
             className={`flex ${
-              msg.role === "user" ? "justify-end" : "justify-start"
+              m.role === "user" ? "justify-end" : "justify-start"
             }`}
           >
             <Card
-              className={`max-w-2xl ${
-                msg.role === "user"
+              className={`max-w-2xl p-4 ${
+                m.role === "user"
                   ? "bg-cyan-600 text-white border-cyan-500"
                   : "bg-slate-800/50 text-gray-100 border-slate-700"
-              } p-4 shadow-md`}
+              }`}
             >
-              <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                {msg.content}
-              </p>
+              <p className="text-sm whitespace-pre-wrap">{m.content}</p>
               <p className="text-xs opacity-50 mt-2">
-                {msg.timestamp.toLocaleTimeString()}
+                {m.timestamp.toLocaleTimeString()}
               </p>
             </Card>
           </div>
         ))}
-
         {loading && (
           <div className="flex justify-start">
             <Card className="bg-slate-800/50 border-slate-700 p-4">
@@ -370,11 +351,13 @@ export default function MockInterviewChat({
             </Card>
           </div>
         )}
-
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
+      {/* MIC */}
+      {config.voiceMode && <MicButton />}
+
+      {/* INPUT */}
       <Card className="bg-slate-800/50 border-slate-700 p-4 shadow-lg">
         <div className="flex gap-3 items-end">
           <Input
@@ -390,21 +373,19 @@ export default function MockInterviewChat({
               }
             }}
             disabled={loading || interviewEnded}
-            className="bg-slate-700 border-slate-600 text-white placeholder-gray-400 flex-1"
+            className="bg-slate-700 border-slate-600 text-white flex-1"
           />
-
           <Button
-            onClick={handleSendMessage}
+            onClick={() => handleSendMessage()}
             disabled={loading || !input.trim() || interviewEnded}
             className="bg-cyan-600 hover:bg-cyan-700 text-white gap-2 disabled:opacity-50"
           >
             <Send className="w-4 h-4" /> Send
           </Button>
         </div>
-
         <div className="mt-2 text-xs text-gray-400 flex justify-between">
-          <span>Questions asked: {questionCount}</span>
-          <span>Practice areas: {config.practiceTypes.join(", ")}</span>
+          <span>Questions: {questionCount}</span>
+          <span>{config.practiceTypes.join(", ")}</span>
         </div>
       </Card>
     </div>

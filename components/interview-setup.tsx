@@ -34,6 +34,7 @@ export default function InterviewSetup({
     practiceTypes: [] as string[],
     jobDescription: "",
     company: "",
+    voiceMode: false, // ⭐ NEW FIELD
   });
 
   const [errors, setErrors] = useState<string[]>([]);
@@ -165,7 +166,7 @@ export default function InterviewSetup({
         </Alert>
       )}
 
-      {/* STEP 0 - RESUME UPLOAD */}
+      {/* STEP 0 */}
       {step === 0 && (
         <Card className="bg-slate-800/50 border-slate-700 p-8">
           <h2 className="text-2xl font-bold mb-6 text-white">
@@ -198,7 +199,7 @@ export default function InterviewSetup({
         </Card>
       )}
 
-      {/* STEP 1 - BASIC SETUP */}
+      {/* STEP 1 */}
       {step === 1 && (
         <Card className="bg-slate-800/50 border-slate-700 p-8">
           <h2 className="text-2xl font-bold mb-6 text-white">
@@ -211,12 +212,12 @@ export default function InterviewSetup({
                 Position Name
               </label>
               <Input
-                placeholder="e.g., Senior Software Engineer, Full Stack Developer"
+                placeholder="e.g., Senior Software Engineer"
                 value={config.position}
                 onChange={(e) =>
                   setConfig({ ...config, position: e.target.value })
                 }
-                className="bg-slate-700 border-slate-600 text-white placeholder-gray-400"
+                className="bg-slate-700 border-slate-600 text-white"
               />
             </div>
 
@@ -293,7 +294,7 @@ export default function InterviewSetup({
         </Card>
       )}
 
-      {/* STEP 2 — INTERVIEW PREFERENCES */}
+      {/* STEP 2 — PREFERENCES */}
       {step === 2 && (
         <Card className="bg-slate-800/50 border-slate-700 p-8">
           <h2 className="text-2xl font-bold mb-6 text-white">
@@ -357,13 +358,31 @@ export default function InterviewSetup({
                 Job Description
               </label>
               <Textarea
-                placeholder="Paste the job description here to tailor the interview to the role..."
+                placeholder="Paste the job description..."
                 value={config.jobDescription}
                 onChange={(e) =>
                   setConfig({ ...config, jobDescription: e.target.value })
                 }
-                className="bg-slate-700 border-slate-600 text-white placeholder-gray-400 min-h-32"
+                className="bg-slate-700 border-slate-600 text-white min-h-32"
               />
+            </div>
+
+            {/* ⭐ NEW: VOICE MODE TOGGLE */}
+            <div className="mt-4 flex items-center gap-3">
+              <Checkbox
+                checked={config.voiceMode}
+                onCheckedChange={(val) =>
+                  setConfig({ ...config, voiceMode: Boolean(val) })
+                }
+                id="voiceMode"
+                className="border-slate-500"
+              />
+              <label
+                htmlFor="voiceMode"
+                className="text-gray-300 cursor-pointer"
+              >
+                Enable Voice Mode (Speech-to-Text + Text-to-Speech)
+              </label>
             </div>
           </div>
 
@@ -385,7 +404,7 @@ export default function InterviewSetup({
         </Card>
       )}
 
-      {/* STEP 3 — COMPANY INFO */}
+      {/* STEP 3 — COMPANY */}
       {step === 3 && (
         <Card className="bg-slate-800/50 border-slate-700 p-8">
           <h2 className="text-2xl font-bold mb-6 text-white">
@@ -403,12 +422,12 @@ export default function InterviewSetup({
                 onChange={(e) =>
                   setConfig({ ...config, company: e.target.value })
                 }
-                className="bg-slate-700 border-slate-600 text-white placeholder-gray-400"
+                className="bg-slate-700 border-slate-600 text-white"
               />
             </div>
             <p className="text-sm text-gray-400">
-              The AI will use this information to ask relevant questions
-              tailored to {config.company || "your target company"}.
+              The AI will tailor the questions to{" "}
+              {config.company || "the company"}.
             </p>
           </div>
 
