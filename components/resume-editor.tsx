@@ -285,12 +285,36 @@ export default function ResumeEditor({ resumeData, setResumeData }: any) {
     setActiveTab(key);
   };
 
+  function formatPhone(value: string) {
+  // Remove everything except digits
+  const cleaned = value.replace(/\D/g, "");
+
+  // Format as (XXX) XXX-XXXX as digits are typed
+  const len = cleaned.length;
+
+  if (len === 0) return "";
+  if (len <= 3) return `(${cleaned}`;
+  if (len <= 6) return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3)}`;
+  
+  return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6, 10)}`;
+}
+
+
   /* ---------------- Personal info ---------------- */
-  const updatePersonal = (field: string, value: string) =>
-    setResumeData({
-      ...resumeData,
-      personal: { ...resumeData.personal, [field]: value },
-    });
+const updatePersonal = (field: string, value: string) => {
+  let newValue = value;
+
+  // Auto-format phone number
+  if (field === "phone") {
+    newValue = formatPhone(value);
+  }
+
+  setResumeData({
+    ...resumeData,
+    personal: { ...resumeData.personal, [field]: newValue },
+  });
+};
+
 
   const updatePersonalFontSize = (field: string, size: string) =>
     setResumeData({
