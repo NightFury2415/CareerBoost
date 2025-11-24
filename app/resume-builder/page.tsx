@@ -99,12 +99,16 @@ const downloadResume = async () => {
   const t = setTimeout(() => controller.abort(), 60000); // 60s
 
   try {
-    const res = await fetch("/api/pdf", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ html }),
-      signal: controller.signal,
-    });
+    const apiBase =
+  process.env.NEXT_PUBLIC_PDF_API_BASE ?? "https://careerboost-9ehw.onrender.com";
+
+const res = await fetch(`${apiBase}/api/pdf`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ html }),
+  signal: controller.signal,
+});
+
 
     clearTimeout(t);
 
