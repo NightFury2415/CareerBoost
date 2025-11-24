@@ -3,9 +3,12 @@ import puppeteer from "puppeteer";
 
 export async function POST(request: NextRequest) {
   let browser;
-  
+
   try {
+    console.log("Request received to generate PDF");
+
     const { html } = await request.json();
+    console.log("HTML content received");
 
     // Launch browser
     browser = await puppeteer.launch({
@@ -14,30 +17,27 @@ export async function POST(request: NextRequest) {
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
-        "--disable-accelerated-2d-canvas",
-        "--disable-gpu",
       ],
     });
 
-    const page = await browser.newPage();
+    console.log("Puppeteer browser launched");
 
-    // Set viewport to A4 size
+    const page = await browser.newPage();
     await page.setViewport({
       width: 794,
       height: 1123,
       deviceScaleFactor: 2,
     });
 
-    // Set content with proper encoding
+    // Set the content of the page
     await page.setContent(html, {
       waitUntil: ["networkidle0", "domcontentloaded"],
       timeout: 30000,
     });
 
-    // Wait a bit for fonts and SVGs to load
-    await new Promise(resolve => setTimeout(resolve, 500));
+    console.log("Page content set");
 
-    // Generate PDF
+    // Generate the PDF
     const pdf = await page.pdf({
       format: "A4",
       printBackground: true,
@@ -50,6 +50,8 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    console.log("PDF generated");
+
     await browser.close();
 
     return new NextResponse(Buffer.from(pdf), {
@@ -59,8 +61,8 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("PDF generation error:", error);
-    
+    console.error("Error generating PDF:", error);
+
     if (browser) {
       await browser.close();
     }
@@ -71,5 +73,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-export const maxDuration = 60; // Maximum execution time in seconds
