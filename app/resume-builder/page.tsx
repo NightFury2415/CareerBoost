@@ -11,14 +11,13 @@ export default function ResumeBuilder() {
     personal: {
       name: "Dev Modi",
       location: "San Francisco, CA",
-      phone: "+1 (XXX) XXX-XXXX",
+      phone: "(415) 555-1234",
       email: "email@example.com",
       website: "yourwebsite.com",
       linkedin: "https://linkedin.com/in/yourprofile",
       github: "https://github.com/yourprofile",
     },
-    summary:
-      "Software engineer with expertise in building scalable applications.",
+    summary: "Software engineer with expertise in building scalable applications.",
     skills: {
       languages: ["Java", "Python", "JavaScript", "TypeScript"],
       frontend: ["React", "Next.js", "Tailwind CSS"],
@@ -61,172 +60,79 @@ export default function ResumeBuilder() {
     ],
   });
 
-  const downloadResume = async () => {
-    const element = document.getElementById("resume-preview");
-    if (!element) return;
+// inside your component…
+const downloadResume = async () => {
+  const el = document.getElementById("resume-preview");
+  if (!el) return;
 
-    const clonedElement = element.cloneNode(true) as HTMLElement;
-
-    // Create hidden iframe for safe rendering
-    const iframe = document.createElement("iframe");
-    iframe.style.position = "absolute";
-    iframe.style.left = "-9999px";
-    iframe.style.width = "210mm";
-    iframe.style.height = "297mm";
-    iframe.style.background = "#ffffff";
-    document.body.appendChild(iframe);
-
-    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-    if (!iframeDoc) return;
-
-    // Clean stylesheet with icon alignment fix
-    iframeDoc.open();
-    iframeDoc.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="UTF-8">
-          <style>
-            @page { size: A4; margin: 0; }
-           
-            * {
-              box-sizing: border-box;
-            }
-           
-            html, body {
-              width: 210mm;
-              height: 297mm;
-              margin: 0;
-              padding: 0;
-              background: #fff;
-              overflow: hidden;
-            }
-           
-            body {
-              font-family: 'Georgia', 'Times New Roman', serif;
-              color: #000;
-              line-height: 1.5;
-              padding: 6mm 8mm;
-              font-size: 11px;
-            }
-
-            h1, h2, h3 {
-              font-weight: 700;
-              color: #000;
-            }
-
-            h1 {
-              font-size: 28px;
-              margin: 0;
-              text-align: center;
-            }
-           
-            h2 {
-              font-size: 12px;
-              margin-top: 6px;
-              margin-bottom: 2px;
-              border-bottom: 1px solid #333;
-              padding-bottom: 2px;
-              text-transform: uppercase;
-              letter-spacing: 0.5px;
-            }
-           
-            h3 {
-              font-size: 11px;
-              margin-top: 4px;
-              margin-bottom: 2px;
-              font-weight: bold;
-            }
-
-            p, li {
-              font-size: 11px;
-              margin: 2px 0;
-              line-height: 1.25;
-            }
-           
-            ul {
-              margin-left: 18px;
-              padding-left: 0;
-            }
-
-            strong, b {
-              font-weight: 700;
-              color: #000;
-            }
-
-            /* Icon alignment fix */
-            svg {
-              vertical-align: baseline;
-              position: relative;
-              top: 1px;
-              display: inline-block;
-              height: 10px;
-              width: 10px;
-            }
-
-            /* Flex container alignment */
-            .inline-icon {
-              display: inline-flex;
-              align-items: center;
-              gap: 3px;
-            }
-
-            span[style*="display: flex"] {
-              align-items: center;
-            }
-          </style>
-        </head>
-        <body></body>
-      </html>
-    `);
-    iframeDoc.close();
-
-    iframeDoc.body.appendChild(clonedElement);
-
-    try {
-      const jspdfModule = await import("jspdf");
-      const html2canvasModule = await import("html2canvas");
-      const html2canvas =
-        (html2canvasModule && html2canvasModule.default) || html2canvasModule;
-      const jsPDF: any =
-        (jspdfModule as any)?.jsPDF ||
-        (jspdfModule as any)?.default?.jsPDF ||
-        (jspdfModule as any)?.default ||
-        jspdfModule;
-
-      // Render canvas
-      const canvas = await html2canvas(iframeDoc.body, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        windowWidth: 794,
-        windowHeight: 1123,
-        logging: false,
-        ignoreElements: (element) => {
-          const computedStyle = window.getComputedStyle(element);
-          return (
-            computedStyle.backgroundColor?.includes("lab(") ||
-            computedStyle.color?.includes("lab(")
-          );
-        },
-      });
-
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF("p", "mm", "a4");
-     
-      // Add the image
-      pdf.addImage(imgData, "PNG", 0, 0, 210, 297);
-
-      pdf.save(`${resumeData.personal.name.replace(/\s+/g, "_")}_Resume.pdf`);
-    } catch (err) {
-      console.error("Error generating PDF:", err);
-      alert("Error generating PDF. Please try again.");
-    } finally {
-      if (iframe && iframe.parentNode) {
-        iframe.parentNode.removeChild(iframe);
+  const html = `<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <base href="${location.origin}/">
+    <style>
+      @page { size: A4; margin: 0; }
+      html, body {
+        width: 210mm; height: 297mm; margin: 0; padding: 0; background: #fff;
+        -webkit-print-color-adjust: exact; print-color-adjust: exact;
       }
+      body {
+        font-family: Georgia, "Times New Roman", serif;
+        color: #000; line-height: 1.5; padding: 6mm 8mm; font-size: 11px;
+      }
+      h1, h2, h3 { color: #000; }
+      a { color: #0066cc; text-decoration: none; }
+      .content-wrapper * { transform: none !important; }
+      svg { height: 10px; width: 10px; vertical-align: baseline; position: relative; top: 1px; }
+    </style>
+  </head>
+  <body>
+    <div class="content-wrapper" style="width:210mm; min-height:297mm;">
+      ${el.outerHTML}
+    </div>
+  </body>
+</html>`;
+
+  // Abort fetch if server takes too long
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), 60000); // 60s
+
+  try {
+    const res = await fetch("/api/pdf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ html }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(t);
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.error("PDF error", err);
+      alert(`Error generating PDF${err?.details ? `: ${err.details}` : ""}`);
+      return;
     }
-  };
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "resume.pdf";
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (e: any) {
+    clearTimeout(t);
+    if (e?.name === "AbortError") {
+      alert("PDF generation timed out. Please try again.");
+    } else {
+      console.error(e);
+      alert("PDF generation failed.");
+    }
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
@@ -254,10 +160,7 @@ export default function ResumeBuilder() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col lg:flex-row lg:gap-8 overflow-hidden">
         <div className="flex-1 min-w-0 overflow-hidden">
-          <ResumeEditor
-            resumeData={resumeData}
-            setResumeData={setResumeData}
-          />
+          <ResumeEditor resumeData={resumeData} setResumeData={setResumeData} />
         </div>
 
         <div className="flex-1 lg:max-w-[50%] sticky top-20 h-[calc(100vh-5rem)] overflow-auto">

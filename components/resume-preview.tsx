@@ -1,6 +1,8 @@
 "use client";
-
 import { Mail, Phone, MapPin, Globe, Linkedin, Github } from "lucide-react";
+
+const withProtocol = (url: string) =>
+  /^https?:\/\//i.test(url) ? url : `https://${url}`;
 
 export default function ResumePreview({ data }: any) {
   /* ---------------- Render formatted text safely ---------------- */
@@ -219,9 +221,7 @@ export default function ResumePreview({ data }: any) {
                   {(exp.position || exp.startDate) &&
                     layoutRow(
                       exp.position,
-                      `${exp.startDate}${
-                        exp.startDate && exp.endDate ? " – " : ""
-                      }${exp.endDate}`,
+                      `${exp.startDate}${exp.startDate && exp.endDate ? " – " : ""}${exp.endDate}`,
                       layout,
                       posSize,
                       dateSize
@@ -365,11 +365,17 @@ export default function ResumePreview({ data }: any) {
                     <p
                       style={{
                         fontSize: `${projSize - 1}px`,
-                        color: "#0066cc",
                         margin: "2px 0 0 0",
                       }}
                     >
-                      {proj.link}
+                      <a
+                        href={withProtocol(proj.link)}
+                        target="_blank"
+                        rel="noopener"
+                        style={{ color: "#0066cc", textDecoration: "none" }}
+                      >
+                        {proj.link}
+                      </a>
                     </p>
                   )}
                 </div>
@@ -401,11 +407,7 @@ export default function ResumePreview({ data }: any) {
             {valid.map((edu: any) => {
               const schoolSize = getFontSize("school", "education", edu.id);
               const degreeSize = getFontSize("degree", "education", edu.id);
-              const gradSize = getFontSize(
-                "graduationDate",
-                "education",
-                edu.id
-              );
+              const gradSize = getFontSize("graduationDate", "education", edu.id);
               const eduSize = data.educationFontSize || "11";
               const layout = data?.dateLayout?.education || "right";
 
@@ -426,25 +428,19 @@ export default function ResumePreview({ data }: any) {
                   )}
 
                   {edu.minor && (
-                    <div
-                      style={{ fontSize: `${eduSize - 1}px`, color: "#555" }}
-                    >
+                    <div style={{ fontSize: `${eduSize - 1}px`, color: "#555" }}>
                       Minor: {edu.minor}
                     </div>
                   )}
 
                   {edu.location && (
-                    <div
-                      style={{ fontSize: `${eduSize - 1}px`, color: "#555" }}
-                    >
+                    <div style={{ fontSize: `${eduSize - 1}px`, color: "#555" }}>
                       {edu.location}
                     </div>
                   )}
 
                   {edu.gpa && (
-                    <div
-                      style={{ fontSize: `${eduSize - 1}px`, color: "#555" }}
-                    >
+                    <div style={{ fontSize: `${eduSize - 1}px`, color: "#555" }}>
                       <strong>GPA: {edu.gpa}</strong>
                     </div>
                   )}
@@ -481,13 +477,11 @@ export default function ResumePreview({ data }: any) {
 
       default: {
         const sectionContent = data[section];
-        if (sectionContent === null || sectionContent === undefined)
-          return null;
+        if (sectionContent === null || sectionContent === undefined) return null;
 
         const title = section.replace(/([A-Z])/g, " $1");
         const customSize = getFontSize(section);
 
-        // Experience-style ARRAY custom section
         if (Array.isArray(sectionContent)) {
           if (!sectionContent.length) return null;
           const layout = data.customDateLayout?.[section] || "right";
@@ -513,9 +507,8 @@ export default function ResumePreview({ data }: any) {
                   data.customFieldFontSizes?.[`${section}:${item.id}-org`] ||
                   customSize;
                 const locSize =
-                  data.customFieldFontSizes?.[
-                    `${section}:${item.id}-location`
-                  ] || customSize - 1;
+                  data.customFieldFontSizes?.[`${section}:${item.id}-location`] ||
+                  customSize - 1;
                 const dateSize =
                   data.customFieldFontSizes?.[
                     `${section}:${item.id}-startDate`
@@ -576,7 +569,6 @@ export default function ResumePreview({ data }: any) {
           );
         }
 
-        // CATEGORY MAP (legacy)
         if (typeof sectionContent === "object" && sectionContent !== null) {
           const hasContent = Object.values(sectionContent).some(
             (c: any) => c?.length
@@ -616,7 +608,6 @@ export default function ResumePreview({ data }: any) {
           );
         }
 
-        // PARAGRAPH
         if (typeof sectionContent === "string" && sectionContent.trim()) {
           return (
             <div style={{ marginBottom: "6px" }}>
@@ -648,7 +639,7 @@ export default function ResumePreview({ data }: any) {
     }
   };
 
-  /* ---------------- MAIN RENDER (tight spacing, no divider) ---------------- */
+  /* ---------------- MAIN RENDER ---------------- */
   return (
     <div
       className="font-serif resume-print-area"
@@ -711,7 +702,12 @@ export default function ResumePreview({ data }: any) {
               }}
             >
               {data.iconVisibility?.phone !== false && <Phone size={10} />}
-              {data.personal.phone}
+              <a
+                href={`tel:${data.personal.phone.replace(/\D/g, "")}`}
+                style={{ color: "inherit", textDecoration: "none" }}
+              >
+                {data.personal.phone}
+              </a>
             </span>
           )}
 
@@ -726,7 +722,12 @@ export default function ResumePreview({ data }: any) {
               }}
             >
               {data.iconVisibility?.email !== false && <Mail size={10} />}
-              {data.personal.email}
+              <a
+                href={`mailto:${data.personal.email}`}
+                style={{ color: "inherit", textDecoration: "none" }}
+              >
+                {data.personal.email}
+              </a>
             </span>
           )}
         </div>
@@ -754,8 +755,16 @@ export default function ResumePreview({ data }: any) {
               {data.iconVisibility?.website !== false &&
                 data.linkDisplay?.website !== "text" && <Globe size={10} />}
               {(data.linkDisplay?.website === "text" ||
-                data.linkDisplay?.website === "both") &&
-                data.personal.website}
+                data.linkDisplay?.website === "both") && (
+                <a
+                  href={withProtocol(data.personal.website)}
+                  target="_blank"
+                  rel="noopener"
+                  style={{ color: "#0066cc", textDecoration: "none" }}
+                >
+                  {data.personal.website}
+                </a>
+              )}
             </span>
           )}
 
@@ -770,10 +779,20 @@ export default function ResumePreview({ data }: any) {
               }}
             >
               {data.iconVisibility?.linkedin !== false &&
-                data.linkDisplay?.linkedin !== "text" && <Linkedin size={10} />}
+                data.linkDisplay?.linkedin !== "text" && (
+                  <Linkedin size={10} />
+                )}
               {(data.linkDisplay?.linkedin === "text" ||
-                data.linkDisplay?.linkedin === "both") &&
-                data.personal.linkedin}
+                data.linkDisplay?.linkedin === "both") && (
+                <a
+                  href={withProtocol(data.personal.linkedin)}
+                  target="_blank"
+                  rel="noopener"
+                  style={{ color: "#0066cc", textDecoration: "none" }}
+                >
+                  {data.personal.linkedin}
+                </a>
+              )}
             </span>
           )}
 
@@ -790,8 +809,16 @@ export default function ResumePreview({ data }: any) {
               {data.iconVisibility?.github !== false &&
                 data.linkDisplay?.github !== "text" && <Github size={10} />}
               {(data.linkDisplay?.github === "text" ||
-                data.linkDisplay?.github === "both") &&
-                data.personal.github}
+                data.linkDisplay?.github === "both") && (
+                <a
+                  href={withProtocol(data.personal.github)}
+                  target="_blank"
+                  rel="noopener"
+                  style={{ color: "#0066cc", textDecoration: "none" }}
+                >
+                  {data.personal.github}
+                </a>
+              )}
             </span>
           )}
 
@@ -824,8 +851,6 @@ export default function ResumePreview({ data }: any) {
             ))}
         </div>
       </div>
-
-      {/* No divider line */}
 
       {/* Sections */}
       {sectionOrder
