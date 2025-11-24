@@ -61,174 +61,178 @@ export default function ResumeBuilder() {
     ],
   });
 
-  // ✅ PDF Export (uses ResumePreview content directly -> no injected header)
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const downloadResume = async () => {
     const element = document.getElementById("resume-preview");
-    if (!element) return;
+    if (!element) {
+      alert("Resume preview not found!");
+      return;
+    }
 
-    const clonedElement = element.cloneNode(true) as HTMLElement;
-
-    // Create hidden iframe for safe rendering
-    const iframe = document.createElement("iframe");
-    iframe.style.position = "absolute";
-    iframe.style.left = "-9999px";
-    iframe.style.width = "210mm";
-    iframe.style.height = "297mm";
-    iframe.style.background = "#ffffff";
-    document.body.appendChild(iframe);
-
-    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-    if (!iframeDoc) return;
-
-    // Clean stylesheet with icon alignment fix
-    iframeDoc.open();
-    iframeDoc.write(`
-      <html>
-        <head>
-          <style>
-            @page { size: A4; margin: 0; }
-            html, body {
-              width: 210mm;
-              height: 297mm;
-              margin: 0;
-              padding: 0;
-              background: #fff;
-              overflow: hidden;
-            }
-            body {
-              font-family: 'Helvetica', 'Arial', sans-serif;
-              color: #111;
-              line-height: 1.6;
-              /* extra bottom padding to avoid pixel-level cropping in exported PDF */
-              padding: 24px 36px 44px 36px;
-              box-sizing: border-box;
-              transform: scale(0.97);
-              transform-origin: top center;
-              text-align: left;
-            }
-
-            h1, h2, h3 {
-              font-weight: 700;
-              color: #000;
-              margin-bottom: 8px;
-            }
-
-            h1 { font-size: 26px; margin-top: 0; text-align: center; }
-            h2 {
-              font-size: 15px;
-              margin-top: 16px;
-              border-bottom: 1px solid #ddd;
-              padding-bottom: 3px;
-              text-transform: uppercase;
-            }
-            h3 { font-size: 13px; margin-top: 10px; }
-
-            p, li { font-size: 12px; margin: 2px 0; }
-            ul { margin-left: 18px; text-align: left; }
-
-            strong, b { color: #000; }
-
-            .flex { display: flex; justify-content: space-between; align-items: baseline; }
-            .text-right { text-align: right; }
-
-            a {
-              color: #0073e6;
-              text-decoration: none;
-            }
-
-            a:hover {
-              text-decoration: underline;
-            }
-
-            hr {
-              border: none;
-              border-top: 1px solid #ccc;
-              margin: 10px 0;
-            }
-
-            /* FIX: Icon alignment - make icons visible and prevent cropping */
-            svg {
-              vertical-align: middle;
-              position: relative;
-              top: 1px; /* small baseline offset */
-              display: inline-block;
-              overflow: visible; /* allow strokes outside bounding box */
-              /* slightly smaller icons to reduce visual weight */
-              height: 0.92em;
-              width: auto;
-              max-height: 1.05em;
-              /* nudge icons slightly down so they sit lower than adjacent text */
-              transform: translateY(1px);
-            }
-
-            /* Add extra line height to spans containing icons to prevent cropping */
-            span[style*="display: flex"], span[style*="display:flex"] {
-              line-height: 1.5 !important; /* increase if needed (1.6) */
-              align-items: flex-end !important; /* push icons lower relative to text baseline */
-              padding-top: 0.06em; /* small padding to avoid clipping at top */
-              padding-bottom: 0.1em; /* increased bottom padding to prevent pixel cropping */
-            }
-
-            /* Also ensure inline containers that might hold icons have sufficient line-height */
-            p, li, .flex, .inline-icon {
-              line-height: 1.45;
-            }
-
-            /* Helper class: use on icon containers if needed */
-            .inline-icon {
-              display: inline-flex;
-              align-items: flex-end; /* icons sit slightly lower than text */
-              padding-top: 0.06em;
-              padding-bottom: 0.1em; /* increased to ensure no bottom clipping */
-              overflow: visible;
-            }
-
-            /* Ensure all fits within one page but allow icon overflow to be visible */
-            .content-wrapper {
-              height: 100%;
-              overflow: visible; /* allow icons to render without being clipped */
-              page-break-inside: avoid;
-              padding-bottom: 2px; /* small safe zone at bottom of resume content */
-            }
-          </style>
-        </head>
-        <body></body>
-      </html>
-    `);
-    iframeDoc.close();
-
-    iframeDoc.body.appendChild(clonedElement);
+    setIsGenerating(true);
 
     try {
-      const jspdfModule = await import("jspdf");
-      const html2canvasModule = await import("html2canvas");
-      const html2canvas =
-        (html2canvasModule && html2canvasModule.default) || html2canvasModule;
-      const jsPDF: any =
-        (jspdfModule as any)?.jsPDF ||
-        (jspdfModule as any)?.default?.jsPDF ||
-        (jspdfModule as any)?.default ||
-        jspdfModule;
+      // Get all computed styles and inline them
+      const clonedElement = element.cloneNode(true) as HTMLElement;
 
-      // Render single-page PDF
-      const canvas = await html2canvas(iframeDoc.body, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        windowWidth: 794,
-        windowHeight: 1123,
+      // Inline all SVG styles
+      const svgs = clonedElement.querySelectorAll("svg");
+      svgs.forEach((svg) => {
+        svg.setAttribute("style", `
+          vertical-align: baseline;
+          position: relative;
+          top: 1px;
+          display: inline-block;
+          height: 10px;
+          width: 10px;
+        `);
       });
 
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF("p", "mm", "a4");
-      pdf.addImage(imgData, "PNG", 0, 0, 210, 297);
-      pdf.save(`${resumeData.personal.name.replace(/\s+/g, "_")}_Resume.pdf`);
+      // Create full HTML document
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <style>
+              * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+              }
+
+              @page {
+                size: A4;
+                margin: 0;
+              }
+
+              html, body {
+                width: 210mm;
+                height: 297mm;
+                margin: 0;
+                padding: 0;
+                background: #fff;
+                overflow: hidden;
+              }
+
+              body {
+                font-family: Georgia, 'Times New Roman', serif;
+                color: #000;
+                line-height: 1.5;
+                font-size: 11px;
+              }
+
+              .font-serif {
+                font-family: Georgia, 'Times New Roman', serif;
+              }
+
+              .resume-print-area {
+                width: 210mm;
+                min-height: 297mm;
+                padding: 6mm 8mm;
+                background-color: #ffffff;
+                color: #000;
+                box-sizing: border-box;
+              }
+
+              h1, h2, h3 {
+                font-weight: 700;
+                color: #000;
+              }
+
+              h1 {
+                font-size: 28px;
+                margin: 0;
+                text-align: center;
+              }
+
+              h2 {
+                font-size: 12px;
+                font-weight: bold;
+                margin: 6px 0 2px 0;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+              }
+
+              h3 {
+                font-size: 11px;
+                margin-top: 4px;
+                margin-bottom: 2px;
+                font-weight: bold;
+              }
+
+              p {
+                font-size: 11px;
+                margin: 2px 0;
+                line-height: 1.25;
+              }
+
+              strong, b {
+                font-weight: 700;
+                color: #000;
+              }
+
+              /* SVG Icons */
+              svg {
+                vertical-align: baseline;
+                position: relative;
+                top: 1px;
+                display: inline-block;
+                width: 10px;
+                height: 10px;
+              }
+
+              /* Flex containers */
+              span[style*="display: flex"],
+              span[style*="display:flex"],
+              .inline-icon {
+                display: inline-flex !important;
+                align-items: center !important;
+                gap: 3px;
+              }
+
+              /* Ensure proper spacing */
+              div[style*="marginBottom"] {
+                margin-bottom: 6px;
+              }
+            </style>
+          </head>
+          <body>
+            ${clonedElement.outerHTML}
+          </body>
+        </html>
+      `;
+
+      // Send to API
+      const response = await fetch("/api/generate-pdf", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ html: htmlContent }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "PDF generation failed");
+      }
+
+      // Download the PDF
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${resumeData.personal.name.replace(/\s+/g, "_")}_Resume.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
     } catch (err) {
       console.error("Error generating PDF:", err);
-      alert("Error generating PDF. Please try again.");
+      alert(`Error generating PDF: ${err instanceof Error ? err.message : "Unknown error"}`);
     } finally {
-      if (iframe && iframe.parentNode) iframe.parentNode.removeChild(iframe);
+      setIsGenerating(false);
     }
   };
 
@@ -241,15 +245,25 @@ export default function ResumeBuilder() {
             href="/"
             className="flex items-center gap-2 text-gray-300 hover:text-cyan-400 transition-colors"
           >
-            Back to Home
+            ← Back to Home
           </Link>
           <h1 className="text-2xl font-bold text-white">Resume Builder</h1>
           <div className="flex items-center gap-2">
             <Button
               onClick={downloadResume}
-              className="gap-2 bg-cyan-500 hover:bg-cyan-600 text-black font-bold py-2 text-sm rounded-lg"
+              disabled={isGenerating}
+              className="gap-2 bg-cyan-500 hover:bg-cyan-600 text-black font-bold py-2 text-sm rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Download PDF
+              {isGenerating ? (
+                <>
+                  <span className="animate-spin">⏳</span>
+                  Generating...
+                </>
+              ) : (
+                <>
+                  📄 Download PDF
+                </>
+              )}
             </Button>
           </div>
         </div>
@@ -265,16 +279,24 @@ export default function ResumeBuilder() {
         </div>
 
         <div className="flex-1 lg:max-w-[50%] sticky top-20 h-[calc(100vh-5rem)] overflow-auto">
-          <div className="min-h-full" style={{ padding: "1rem", display: "flex", justifyContent: "center", alignItems: "flex-start", minWidth: "calc(210mm + 2rem)" }}>
+          <div
+            style={{
+              padding: "1rem",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "flex-start",
+              minWidth: "calc(210mm + 2rem)",
+            }}
+          >
             <div
               style={{
                 backgroundColor: "#ffffff",
                 border: "1px solid #e2e8f0",
                 borderRadius: "0.5rem",
                 boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
-                width: "210mm", // Fixed A4 width
-                minHeight: "297mm", // Fixed A4 height
-                flexShrink: 0, // Prevent shrinking
+                width: "210mm",
+                minHeight: "297mm",
+                flexShrink: 0,
               }}
             >
               <div id="resume-preview" className="content-wrapper">
