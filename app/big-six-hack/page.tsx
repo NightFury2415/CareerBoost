@@ -312,7 +312,7 @@ export default function BigSixHack() {
 
                 {/* LeetCode Topics */}
                 <Card className="bg-slate-800/50 border-slate-700 p-6">
-                  <h4 className="text-xl font-bold mb-4 flex items-center gap-2">
+                  <h4 className="text-xl font-bold mb-4 flex items-center gap-2 text-white">
                     <Code className="w-5 h-5 text-cyan-400" />
                     Key LeetCode Topics
                   </h4>
@@ -355,7 +355,7 @@ export default function BigSixHack() {
             {Object.entries(globalTips).map(([category, tips]: any) => (
               <TabsContent key={category} value={category} className="mt-8">
                 <Card className="bg-slate-800/50 border-slate-700 p-8">
-                  <h3 className="text-2xl font-bold mb-6">{category}</h3>
+                  <h3 className="text-2xl font-bold mb-6 text-white">{category}</h3>
                   <ul className="space-y-4">
                     {tips.map((tip: string, idx: number) => (
                       <li key={idx} className="flex gap-4">
