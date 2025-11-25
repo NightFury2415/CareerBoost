@@ -31,10 +31,9 @@ export default function InterviewSetup({
     experience: "",
     interviewType: "",
     timeLimit: "",
-    practiceTypes: [] as string[],
     jobDescription: "",
     company: "",
-    voiceMode: false, // ⭐ NEW FIELD
+    voiceMode: false,
   });
 
   const [errors, setErrors] = useState<string[]>([]);
@@ -49,38 +48,22 @@ export default function InterviewSetup({
 
   const timeLimits = ["30 mins", "45 mins", "1 hour", "90 mins"];
 
-  const practiceOptions = [
-    { value: "coding", label: "Coding Questions" },
-    { value: "technical", label: "Technical Questions" },
-    { value: "system-design", label: "System Design" },
-    { value: "behavioral", label: "Behavioral Questions" },
-    { value: "mixed", label: "Mix of Everything" },
-  ];
-
   const validateStep = (currentStep: number) => {
     const newErrors: string[] = [];
 
     if (currentStep === 0) {
-      if (!resumeBase64)
-        newErrors.push("Please upload your resume before continuing.");
-    }
-
-    if (currentStep === 1) {
+      if (!config.company.trim()) newErrors.push("Company name is required");
       if (!config.position.trim()) newErrors.push("Position name is required");
       if (!config.experience) newErrors.push("Years of experience is required");
       if (!config.interviewType) newErrors.push("Interview type is required");
     }
 
-    if (currentStep === 2) {
-      if (!config.timeLimit) newErrors.push("Time limit is required");
-      if (config.practiceTypes.length === 0)
-        newErrors.push("Select at least one practice area");
+    if (currentStep === 1) {
       if (!config.jobDescription.trim())
         newErrors.push("Job description is required");
-    }
-
-    if (currentStep === 3) {
-      if (!config.company.trim()) newErrors.push("Company name is required");
+      if (!config.timeLimit) newErrors.push("Time limit is required");
+      if (!resumeBase64)
+        newErrors.push("Please upload your resume before continuing.");
     }
 
     setErrors(newErrors);
@@ -107,14 +90,6 @@ export default function InterviewSetup({
     }
   };
 
-  const togglePracticeType = (type: string) => {
-    setConfig({
-      ...config,
-      practiceTypes: config.practiceTypes.includes(type)
-        ? config.practiceTypes.filter((t) => t !== type)
-        : [...config.practiceTypes, type],
-    });
-  };
 
   const handleResumeUpload = async (file: File) => {
     setResumeFile(file);
@@ -129,11 +104,11 @@ export default function InterviewSetup({
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-8">
-        <div className="flex justify-between mb-4">
-          {[0, 1, 2, 3].map((s) => (
-            <div key={s} className="flex flex-col items-center flex-1">
+        <div className="flex justify-center gap-8 mb-4">
+          {[0, 1].map((s) => (
+            <div key={s} className="flex flex-col items-center">
               <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-all ${
+                className={`w-12 h-12 rounded-full flex items-center justify-center font-bold transition-all ${
                   s <= step
                     ? "bg-cyan-500 text-black"
                     : "bg-slate-700 text-gray-300"
@@ -141,14 +116,8 @@ export default function InterviewSetup({
               >
                 {s + 1}
               </div>
-              <span className="text-xs mt-2 text-gray-300">
-                {s === 0
-                  ? "Resume"
-                  : s === 1
-                  ? "Setup"
-                  : s === 2
-                  ? "Preferences"
-                  : "Company"}
+              <span className="text-sm mt-2 text-gray-300 font-medium">
+                {s === 0 ? "Basic Info" : "Final Details"}
               </span>
             </div>
           ))}
@@ -166,47 +135,31 @@ export default function InterviewSetup({
         </Alert>
       )}
 
-      {/* STEP 0 */}
+      {/* STEP 0 - Basic Info */}
       {step === 0 && (
         <Card className="bg-slate-800/50 border-slate-700 p-8">
           <h2 className="text-2xl font-bold mb-6 text-white">
-            Upload Your Resume
-          </h2>
-
-          <Input
-            type="file"
-            accept="application/pdf"
-            onChange={(e) =>
-              e.target.files && handleResumeUpload(e.target.files[0])
-            }
-            className="bg-slate-700 border-slate-600 text-white"
-          />
-
-          {resumeFile && (
-            <p className="text-gray-300 mt-3 text-sm">
-              Uploaded: {resumeFile.name}
-            </p>
-          )}
-
-          <div className="flex justify-end gap-3 mt-8">
-            <Button
-              onClick={handleNext}
-              className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold"
-            >
-              Next
-            </Button>
-          </div>
-        </Card>
-      )}
-
-      {/* STEP 1 */}
-      {step === 1 && (
-        <Card className="bg-slate-800/50 border-slate-700 p-8">
-          <h2 className="text-2xl font-bold mb-6 text-white">
-            Interview Setup
+            Basic Information
           </h2>
 
           <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-semibold text-gray-300 mb-2">
+                Company Name
+              </label>
+              <Input
+                placeholder="e.g., Google, Amazon, Meta"
+                value={config.company}
+                onChange={(e) =>
+                  setConfig({ ...config, company: e.target.value })
+                }
+                className="bg-slate-700 border-slate-600 text-white"
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                The AI will tailor questions to this company
+              </p>
+            </div>
+
             <div>
               <label className="block text-sm font-semibold text-gray-300 mb-2">
                 Position Name
@@ -276,14 +229,7 @@ export default function InterviewSetup({
             </div>
           </div>
 
-          <div className="flex justify-between gap-3 mt-8">
-            <Button
-              onClick={handleBack}
-              variant="outline"
-              className="text-gray-300 bg-transparent hover:bg-slate-700"
-            >
-              Back
-            </Button>
+          <div className="flex justify-end gap-3 mt-8">
             <Button
               onClick={handleNext}
               className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold"
@@ -294,14 +240,31 @@ export default function InterviewSetup({
         </Card>
       )}
 
-      {/* STEP 2 — PREFERENCES */}
-      {step === 2 && (
+      {/* STEP 1 - Final Details */}
+      {step === 1 && (
         <Card className="bg-slate-800/50 border-slate-700 p-8">
           <h2 className="text-2xl font-bold mb-6 text-white">
-            Interview Preferences
+            Final Details
           </h2>
 
           <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-semibold text-gray-300 mb-2">
+                Job Description
+              </label>
+              <Textarea
+                placeholder="Paste the job description here..."
+                value={config.jobDescription}
+                onChange={(e) =>
+                  setConfig({ ...config, jobDescription: e.target.value })
+                }
+                className="bg-slate-700 border-slate-600 text-white min-h-32"
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                This helps the AI tailor questions to the specific role
+              </p>
+            </div>
+
             <div>
               <label className="block text-sm font-semibold text-gray-300 mb-2">
                 Time Limit
@@ -330,45 +293,25 @@ export default function InterviewSetup({
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-300 mb-4">
-                What would you like to practice?
-              </label>
-              <div className="space-y-3">
-                {practiceOptions.map((option) => (
-                  <div key={option.value} className="flex items-center">
-                    <Checkbox
-                      id={option.value}
-                      checked={config.practiceTypes.includes(option.value)}
-                      onCheckedChange={() => togglePracticeType(option.value)}
-                      className="border-slate-500"
-                    />
-                    <label
-                      htmlFor={option.value}
-                      className="ml-3 cursor-pointer text-gray-300"
-                    >
-                      {option.label}
-                    </label>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div>
               <label className="block text-sm font-semibold text-gray-300 mb-2">
-                Job Description
+                Upload Your Resume (PDF)
               </label>
-              <Textarea
-                placeholder="Paste the job description..."
-                value={config.jobDescription}
+              <Input
+                type="file"
+                accept="application/pdf"
                 onChange={(e) =>
-                  setConfig({ ...config, jobDescription: e.target.value })
+                  e.target.files && handleResumeUpload(e.target.files[0])
                 }
-                className="bg-slate-700 border-slate-600 text-white min-h-32"
+                className="bg-slate-700 border-slate-600 text-white"
               />
+              {resumeFile && (
+                <p className="text-gray-300 mt-2 text-sm">
+                  ✓ Uploaded: {resumeFile.name}
+                </p>
+              )}
             </div>
 
-            {/* ⭐ NEW: VOICE MODE TOGGLE */}
-            <div className="mt-4 flex items-center gap-3">
+            <div className="flex items-center gap-3 pt-2">
               <Checkbox
                 checked={config.voiceMode}
                 onCheckedChange={(val) =>
@@ -395,53 +338,8 @@ export default function InterviewSetup({
               Back
             </Button>
             <Button
-              onClick={handleNext}
-              className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold"
-            >
-              Next
-            </Button>
-          </div>
-        </Card>
-      )}
-
-      {/* STEP 3 — COMPANY */}
-      {step === 3 && (
-        <Card className="bg-slate-800/50 border-slate-700 p-8">
-          <h2 className="text-2xl font-bold mb-6 text-white">
-            Company Information
-          </h2>
-
-          <div className="space-y-6">
-            <div>
-              <label className="block text-sm font-semibold text-gray-300 mb-2">
-                Company Name
-              </label>
-              <Input
-                placeholder="e.g., Google, Amazon, Meta"
-                value={config.company}
-                onChange={(e) =>
-                  setConfig({ ...config, company: e.target.value })
-                }
-                className="bg-slate-700 border-slate-600 text-white"
-              />
-            </div>
-            <p className="text-sm text-gray-400">
-              The AI will tailor the questions to{" "}
-              {config.company || "the company"}.
-            </p>
-          </div>
-
-          <div className="flex justify-between gap-3 mt-8">
-            <Button
-              onClick={handleBack}
-              variant="outline"
-              className="text-gray-300 bg-transparent hover:bg-slate-700"
-            >
-              Back
-            </Button>
-            <Button
               onClick={handleStart}
-              className="bg-green-600 hover:bg-green-700 text-white font-bold"
+              className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold"
             >
               Start Interview
             </Button>
