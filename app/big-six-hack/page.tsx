@@ -340,9 +340,13 @@ export default function BigSixHack() {
           </h2>
 
           <Tabs defaultValue="LeetCode Strategy" className="w-full">
-            <TabsList className="grid w-full md:grid-cols-3 bg-slate-800">
+            <TabsList className="grid w-full md:grid-cols-3 bg-slate-800 p-2 gap-2">
               {Object.keys(globalTips).map((category) => (
-                <TabsTrigger key={category} value={category} className="text-white">
+                <TabsTrigger 
+                  key={category} 
+                  value={category} 
+                  className="text-white data-[state=active]:bg-gradient-to-r data-[state=active]:from-cyan-500 data-[state=active]:to-blue-500 data-[state=active]:text-white"
+                >
                   {category.split(" ")[0]}
                 </TabsTrigger>
               ))}
