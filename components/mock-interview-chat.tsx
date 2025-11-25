@@ -385,7 +385,7 @@ export default function MockInterviewChat({
         </div>
         <div className="mt-2 text-xs text-gray-400 flex justify-between">
           <span>Questions: {questionCount}</span>
-          <span>{config.practiceTypes.join(", ")}</span>
+          <span>{config.interviewType.charAt(0).toUpperCase() + config.interviewType.slice(1).replace("-", " ")} Interview</span>
         </div>
       </Card>
     </div>
