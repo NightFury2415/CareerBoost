@@ -9,7 +9,7 @@ import ResumeEditor from "@/components/resume-editor";
 export default function ResumeBuilder() {
   const [resumeData, setResumeData] = useState({
     personal: {
-      name: "Dev Modi",
+      name: "Your Name",
       location: "San Francisco, CA",
       phone: "(415) 555-1234",
       email: "email@example.com",
@@ -17,7 +17,8 @@ export default function ResumeBuilder() {
       linkedin: "https://linkedin.com/in/yourprofile",
       github: "https://github.com/yourprofile",
     },
-    summary: "Software engineer with expertise in building scalable applications.",
+    summary:
+      "Software engineer with expertise in building scalable applications.",
     skills: {
       languages: ["Java", "Python", "JavaScript", "TypeScript"],
       frontend: ["React", "Next.js", "Tailwind CSS"],
@@ -60,12 +61,12 @@ export default function ResumeBuilder() {
     ],
   });
 
-// inside your component…
-const downloadResume = async () => {
-  const el = document.getElementById("resume-preview");
-  if (!el) return;
+  // inside your component…
+  const downloadResume = async () => {
+    const el = document.getElementById("resume-preview");
+    if (!el) return;
 
-  const html = `<!DOCTYPE html>
+    const html = `<!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8"/>
@@ -94,49 +95,53 @@ const downloadResume = async () => {
   </body>
 </html>`;
 
-  // Abort fetch if server takes too long
-  const controller = new AbortController();
-  const t = setTimeout(() => controller.abort(), 60000); // 60s
+    // Abort fetch if server takes too long
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), 60000); // 60s
 
-  try {
-    const apiBase =
-  process.env.NEXT_PUBLIC_PDF_API_BASE ?? "https://careerboost-9ehw.onrender.com";
+    try {
+      const apiBase =
+        process.env.NEXT_PUBLIC_PDF_API_BASE ??
+        "https://careerboost-9ehw.onrender.com";
 
-const res = await fetch(`${apiBase}/api/pdf`, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ html }),
-  signal: controller.signal,
-});
+      const res = await fetch(`${apiBase}/api/pdf`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ html }),
+        signal: controller.signal,
+      });
 
+      clearTimeout(t);
 
-    clearTimeout(t);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        console.error("PDF error", err);
+        alert(`Error generating PDF${err?.details ? `: ${err.details}` : ""}`);
+        return;
+      }
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      console.error("PDF error", err);
-      alert(`Error generating PDF${err?.details ? `: ${err.details}` : ""}`);
-      return;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const nameParts = resumeData.personal.name.trim().split(/\s+/);
+      const firstName = nameParts[0] || "Resume";
+      const lastName = nameParts[nameParts.length - 1] || "";
+      a.download = lastName
+        ? `${firstName}_${lastName}_Resume.pdf`
+        : `${firstName}_Resume.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      clearTimeout(t);
+      if (e?.name === "AbortError") {
+        alert("PDF generation timed out. Please try again.");
+      } else {
+        console.error(e);
+        alert("PDF generation failed.");
+      }
     }
-
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "resume.pdf";
-    a.click();
-    URL.revokeObjectURL(url);
-  } catch (e: any) {
-    clearTimeout(t);
-    if (e?.name === "AbortError") {
-      alert("PDF generation timed out. Please try again.");
-    } else {
-      console.error(e);
-      alert("PDF generation failed.");
-    }
-  }
-};
-
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
