@@ -1,92 +1,29 @@
 import { NextResponse } from "next/server";
-import { spawn } from "child_process";
-import path from "path";
-import fs from "fs";
-import os from "os";
+import { HfInference } from "@huggingface/inference";
 
 const HF_API_KEY = process.env.HUGGINGFACE_API_KEY as string;
 
 // ❗Use Node runtime (Edge can't stream binary audio)
 export const runtime = "nodejs";
 
-// Helper function to run Python script
-function runPythonTTS(text: string, apiKey: string): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
-    // Create a temporary directory for audio files
-    const tmpDir = path.join(os.tmpdir(), "tts-" + Date.now());
-    if (!fs.existsSync(tmpDir)) {
-      fs.mkdirSync(tmpDir, { recursive: true });
-    }
+// Helper function to generate TTS using Hugging Face Inference with Replicate provider
+async function generateTTS(text: string, apiKey: string): Promise<Buffer> {
+  try {
+    const client = new HfInference(apiKey);
 
-    const audioPath = path.join(tmpDir, "output.wav");
-    const scriptPath = path.join(tmpDir, "tts_script.py");
-
-    // Python script to generate TTS using the working method
-    const pythonScript = `import sys
-sys.path.insert(0, '${path.join(process.cwd()).replace(/\\/g, "\\\\")}')
-
-try:
-    from huggingface_hub import InferenceClient
-    
-    client = InferenceClient(provider="replicate", api_key="${apiKey}")
-    audio = client.text_to_speech("""${text.replace(
-      /"""/g,
-      '\\"\\"\\"'
-    )}""", model="hexgrad/Kokoro-82M")
-    
-    with open(r"${audioPath}", "wb") as f:
-        f.write(audio)
-    
-    print("SUCCESS")
-except Exception as e:
-    print(f"ERROR: {str(e)}", file=sys.stderr)
-    sys.exit(1)
-`;
-
-    // Write script to temp file to avoid command-line escaping issues
-    try {
-      fs.writeFileSync(scriptPath, pythonScript, "utf-8");
-    } catch (err) {
-      return reject(new Error(`Failed to write Python script: ${err}`));
-    }
-
-    const pythonProcess = spawn("python", [scriptPath]);
-    let stderr = "";
-
-    pythonProcess.stderr.on("data", (data) => {
-      stderr += data.toString();
+    // Use the provider: replicate option to avoid fal-ai
+    const audio = await client.textToSpeech({
+      model: "hexgrad/Kokoro-82M",
+      inputs: text,
+      // @ts-ignore - provider option
+      provider: "replicate",
     });
 
-    pythonProcess.on("close", (code) => {
-      // Clean up script file
-      try {
-        fs.unlinkSync(scriptPath);
-      } catch {}
-
-      if (code === 0 && fs.existsSync(audioPath)) {
-        try {
-          const audioBuffer = fs.readFileSync(audioPath);
-          // Clean up temp file
-          fs.unlinkSync(audioPath);
-          fs.rmSync(tmpDir, { recursive: true, force: true });
-          resolve(audioBuffer);
-        } catch (e) {
-          reject(e);
-        }
-      } else {
-        // Clean up on error
-        try {
-          fs.unlinkSync(audioPath);
-          fs.rmSync(tmpDir, { recursive: true, force: true });
-        } catch {}
-        reject(new Error(stderr || "Python TTS failed"));
-      }
-    });
-
-    pythonProcess.on("error", (err) => {
-      reject(err);
-    });
-  });
+    const buffer = await audio.arrayBuffer();
+    return Buffer.from(buffer);
+  } catch (error) {
+    throw new Error(`TTS generation failed: ${error}`);
+  }
 }
 
 export async function POST(req: Request) {
@@ -96,30 +33,40 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing text" }, { status: 400 });
     }
 
+    if (!HF_API_KEY) {
+      console.error("Missing HUGGINGFACE_API_KEY environment variable");
+      return NextResponse.json(
+        { error: "TTS not configured", fallback: true },
+        { status: 200 }
+      );
+    }
+
     console.log("Attempting TTS with text:", text.substring(0, 50));
     console.log("API Key present:", !!HF_API_KEY);
-    console.log("Using model: hexgrad/Kokoro-82M via Python InferenceClient");
+    console.log(
+      "Using model: hexgrad/Kokoro-82M via Hugging Face Inference API"
+    );
 
     try {
-      const audioBuffer = await runPythonTTS(text, HF_API_KEY);
+      const audioBuffer = await generateTTS(text, HF_API_KEY);
       console.log(
         "Successfully generated audio, size:",
         audioBuffer.byteLength
       );
 
-      return new NextResponse(new Uint8Array(audioBuffer), {
+      return new NextResponse(audioBuffer as any, {
         status: 200,
         headers: {
           "Content-Type": "audio/wav",
           "Cache-Control": "no-cache",
         },
       });
-    } catch (pythonErr: any) {
-      console.error("Python TTS failed:", pythonErr.message);
+    } catch (hfErr: any) {
+      console.error("Hugging Face TTS failed:", hfErr.message);
       console.log("Falling back to Web Speech API");
 
       return NextResponse.json(
-        { error: "Python TTS unavailable", fallback: true },
+        { error: "TTS unavailable", fallback: true },
         { status: 200 }
       );
     }
