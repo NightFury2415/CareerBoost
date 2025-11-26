@@ -106,13 +106,18 @@ export default function MockInterviewChat({
         timestamp: new Date(),
       };
       setMessages([msg]);
-      if (config.voiceMode) await speakText(question);
+      // Non-blocking TTS call
+      if (config.voiceMode) {
+        speakText(question).catch((err) => console.error("TTS error:", err));
+      }
     } catch {
       const fallback = "Hey! How are you doing today?";
       setMessages([
         { role: "assistant", content: fallback, timestamp: new Date() },
       ]);
-      if (config.voiceMode) await speakText(fallback);
+      if (config.voiceMode) {
+        speakText(fallback).catch((err) => console.error("TTS error:", err));
+      }
     }
     setWarmupComplete(false);
     setQuestionCount(0);
@@ -194,7 +199,10 @@ export default function MockInterviewChat({
         timestamp: new Date(),
       };
       setMessages((p) => [...p, aiMsg]);
-      if (config.voiceMode) await speakText(question);
+      // Non-blocking TTS call
+      if (config.voiceMode) {
+        speakText(question).catch((err) => console.error("TTS error:", err));
+      }
       setQuestionCount((p) => p + 1);
     } catch {
       const fallback =
@@ -203,7 +211,9 @@ export default function MockInterviewChat({
         ...p,
         { role: "assistant", content: fallback, timestamp: new Date() },
       ]);
-      if (config.voiceMode) await speakText(fallback);
+      if (config.voiceMode) {
+        speakText(fallback).catch((err) => console.error("TTS error:", err));
+      }
     }
     setLoading(false);
   };
@@ -385,7 +395,11 @@ export default function MockInterviewChat({
         </div>
         <div className="mt-2 text-xs text-gray-400 flex justify-between">
           <span>Questions: {questionCount}</span>
-          <span>{config.interviewType.charAt(0).toUpperCase() + config.interviewType.slice(1).replace("-", " ")} Interview</span>
+          <span>
+            {config.interviewType.charAt(0).toUpperCase() +
+              config.interviewType.slice(1).replace("-", " ")}{" "}
+            Interview
+          </span>
         </div>
       </Card>
     </div>
