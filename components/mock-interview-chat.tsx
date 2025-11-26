@@ -146,12 +146,13 @@ export default function MockInterviewChat({
       });
       const data = await res.json();
       const question = data.question;
-      const msg = {
-        role: "assistant",
-        content: question,
-        timestamp: new Date(),
-      };
-      setMessages([msg]);
+      setMessages([
+        {
+          role: "assistant",
+          content: question,
+          timestamp: new Date(),
+        },
+      ]);
       // Non-blocking TTS call
       if (config.voiceMode) {
         speakText(question).catch((err) => console.error("TTS error:", err));
