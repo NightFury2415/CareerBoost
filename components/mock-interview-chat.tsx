@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Send, Loader, Download } from "lucide-react";
 
@@ -56,6 +56,7 @@ export default function MockInterviewChat({
   // ---------- REFS ----------
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const timerRef = useRef<NodeJS.Timeout>();
   const askedQuestionsRef = useRef<string[]>([]);
   const initialQuestionRef = useRef(false);
@@ -93,7 +94,8 @@ export default function MockInterviewChat({
 
     // Check if user has scrolled up manually
     const isAtBottom =
-      container.scrollHeight - container.scrollTop - container.clientHeight < 50;
+      container.scrollHeight - container.scrollTop - container.clientHeight <
+      50;
 
     // Only auto-scroll if user hasn't scrolled up
     if (isAtBottom || !userScrolledUpRef.current) {
@@ -111,8 +113,21 @@ export default function MockInterviewChat({
 
     // Check if user is not at the bottom
     const isAtBottom =
-      container.scrollHeight - container.scrollTop - container.clientHeight < 50;
+      container.scrollHeight - container.scrollTop - container.clientHeight <
+      50;
     userScrolledUpRef.current = !isAtBottom;
+  };
+
+  // ---------- AUTO EXPAND TEXTAREA ----------
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+
+    // Auto-expand textarea height
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = "auto";
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
+    }
   };
 
   // ---------- WARMUP ----------
@@ -405,20 +420,24 @@ export default function MockInterviewChat({
       {/* INPUT */}
       <Card className="bg-slate-800/50 border-slate-700 p-4 shadow-lg">
         <div className="flex gap-3 items-end">
-          <Input
+          <Textarea
+            ref={textareaRef}
             placeholder={
-              interviewEnded ? "Interview ended." : "Type your answer..."
+              interviewEnded
+                ? "Interview ended."
+                : "Use the Voice Feature or Type your answer..."
             }
             value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
+            onChange={handleInputChange}
+            onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
                 handleSendMessage();
               }
             }}
             disabled={loading || interviewEnded}
-            className="bg-slate-700 border-slate-600 text-white flex-1"
+            className="bg-slate-700 border-slate-600 text-white flex-1 resize-none min-h-12 max-h-52"
+            rows={1}
           />
           <Button
             onClick={() => handleSendMessage()}
