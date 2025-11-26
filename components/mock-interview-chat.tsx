@@ -55,9 +55,11 @@ export default function MockInterviewChat({
 
   // ---------- REFS ----------
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<NodeJS.Timeout>();
   const askedQuestionsRef = useRef<string[]>([]);
   const initialQuestionRef = useRef(false);
+  const userScrolledUpRef = useRef(false);
 
   // ---------- TIME ----------
   const timeLimitMinutes = parseInt(config.timeLimit.split(" ")[0]);
@@ -83,6 +85,35 @@ export default function MockInterviewChat({
     initialQuestionRef.current = true;
     requestWarmup();
   }, []);
+
+  // ---------- AUTO SCROLL ----------
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    // Check if user has scrolled up manually
+    const isAtBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight < 50;
+
+    // Only auto-scroll if user hasn't scrolled up
+    if (isAtBottom || !userScrolledUpRef.current) {
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        userScrolledUpRef.current = false; // Reset after scrolling
+      }, 0);
+    }
+  }, [messages, loading]);
+
+  // ---------- HANDLE SCROLL ----------
+  const handleScroll = () => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    // Check if user is not at the bottom
+    const isAtBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight < 50;
+    userScrolledUpRef.current = !isAtBottom;
+  };
 
   // ---------- WARMUP ----------
   const requestWarmup = async () => {
@@ -332,7 +363,11 @@ export default function MockInterviewChat({
       </Card>
 
       {/* MESSAGES */}
-      <div className="flex-1 overflow-y-auto mb-4 space-y-4 bg-slate-900/30 rounded-lg p-4">
+      <div
+        ref={messagesContainerRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto mb-4 space-y-4 bg-slate-900/30 rounded-lg p-4"
+      >
         {messages.map((m, i) => (
           <div
             key={i}
