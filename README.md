@@ -72,13 +72,6 @@ Open [http://localhost:3000/mock-interview](http://localhost:3000/mock-interview
 
 ### Components
 
-#### `interview-setup.tsx`
-
-- 3-step wizard for interview configuration
-- Position, experience level, interview type selection
-- Time limit and practice area preferences
-- Job description input
-
 #### `mock-interview-chat.tsx`
 
 - Real-time chat interface
@@ -96,13 +89,6 @@ Open [http://localhost:3000/mock-interview](http://localhost:3000/mock-interview
 ## 🤖 AI Integration
 
 ### Hugging Face API
-
-The platform uses the **Mistral-7B-Instruct** model via Hugging Face API:
-
-```
-Model: mistralai/Mistral-7B-Instruct-v0.1
-API: https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1/v1/chat/completions
-```
 
 **Features:**
 
@@ -256,25 +242,6 @@ Configure environment variables in Vercel dashboard:
 - [Hugging Face API](https://huggingface.co/docs/api-inference/quicktour)
 - [shadcn/ui Components](https://ui.shadcn.com/)
 - [TailwindCSS](https://tailwindcss.com/)
-
-## 🤝 Contributing
-
-To add new features or interview types:
-
-1. Update `interview-setup.tsx` to add new options
-2. Modify `route.ts` to handle new interview types
-3. Add corresponding fallback questions
-4. Test with `mock-interview-chat.tsx`
-
-## 📋 Next Steps
-
-- [ ] Add user authentication
-- [ ] Implement database for storing interview history
-- [ ] Add scoring and feedback system
-- [ ] Create interview analytics dashboard
-- [ ] Add more AI models/providers
-- [ ] Implement real-time collaboration features
-- [ ] Add mobile app version
 
 ## 📄 License
 
