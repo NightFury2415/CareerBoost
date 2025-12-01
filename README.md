@@ -36,35 +36,6 @@ npm run dev
 
 Open [http://localhost:3000/mock-interview](http://localhost:3000/mock-interview) in your browser.
 
-## 🎯 How to Use the Platform
-
-### Interview Flow
-
-1. **Navigate to:** `http://localhost:3000/mock-interview`
-
-2. **Step 1 - Setup:**
-
-   - Enter position name (e.g., "Full Stack Developer", "Senior Engineer")
-   - Select years of experience (0-1, 1-3, 3-5, 5-7, 7-10, 10+)
-   - Choose interview type (Technical, Behavioral, System Design, Coding, Mixed)
-
-3. **Step 2 - Preferences:**
-
-   - Set time limit (30 mins, 45 mins, 1 hour, 90 mins)
-   - Select practice areas (Coding, Technical, System Design, Behavioral, Mixed)
-   - Paste job description for targeted preparation
-
-4. **Step 3 - Company:**
-
-   - Enter company name
-   - Click "Start Interview"
-
-5. **Interview:**
-   - Answer questions in the chat interface
-   - AI asks follow-up questions based on your responses
-   - Monitor time remaining in the header
-   - Download transcript anytime
-   - Click "End Interview" when done
 
 ## 🔧 Technical Architecture
 
