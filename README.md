@@ -2,37 +2,6 @@
 
 CareerBoost is a Next.js-based platform for practicing interviews with AI-powered adaptive questioning.
 
-## 📁 Project Structure
-
-```
-CareerBoost/
-├── app/
-│   ├── api/
-│   │   └── interview/
-│   │       └── chat/
-│   │           └── route.ts          ✓ API route for chat
-│   ├── mock-interview/
-│   │   └── page.tsx                  ✓ Main interview page
-│   ├── resume-builder/
-│   │   └── page.tsx
-│   ├── globals.css
-│   └── layout.tsx
-├── components/
-│   ├── ui/
-│   │   ├── button.tsx
-│   │   ├── input.tsx
-│   │   ├── card.tsx
-│   │   ├── select.tsx
-│   │   ├── checkbox.tsx
-│   │   ├── textarea.tsx
-│   │   └── alert.tsx
-│   ├── interview-setup.tsx           ✓ Setup wizard
-│   └── mock-interview-chat.tsx       ✓ Chat interface
-├── .env.local                         ✓ Environment variables
-├── package.json
-└── tsconfig.json
-```
-
 ## 🚀 Quick Start
 
 ### 1. Install Dependencies
