@@ -2,37 +2,6 @@
 
 CareerBoost is a Next.js-based platform for practicing interviews with AI-powered adaptive questioning.
 
-## 📁 Project Structure
-
-```
-CareerBoost/
-├── app/
-│   ├── api/
-│   │   └── interview/
-│   │       └── chat/
-│   │           └── route.ts          ✓ API route for chat
-│   ├── mock-interview/
-│   │   └── page.tsx                  ✓ Main interview page
-│   ├── resume-builder/
-│   │   └── page.tsx
-│   ├── globals.css
-│   └── layout.tsx
-├── components/
-│   ├── ui/
-│   │   ├── button.tsx
-│   │   ├── input.tsx
-│   │   ├── card.tsx
-│   │   ├── select.tsx
-│   │   ├── checkbox.tsx
-│   │   ├── textarea.tsx
-│   │   └── alert.tsx
-│   ├── interview-setup.tsx           ✓ Setup wizard
-│   └── mock-interview-chat.tsx       ✓ Chat interface
-├── .env.local                         ✓ Environment variables
-├── package.json
-└── tsconfig.json
-```
-
 ## 🚀 Quick Start
 
 ### 1. Install Dependencies
@@ -67,35 +36,6 @@ npm run dev
 
 Open [http://localhost:3000/mock-interview](http://localhost:3000/mock-interview) in your browser.
 
-## 🎯 How to Use the Platform
-
-### Interview Flow
-
-1. **Navigate to:** `http://localhost:3000/mock-interview`
-
-2. **Step 1 - Setup:**
-
-   - Enter position name (e.g., "Full Stack Developer", "Senior Engineer")
-   - Select years of experience (0-1, 1-3, 3-5, 5-7, 7-10, 10+)
-   - Choose interview type (Technical, Behavioral, System Design, Coding, Mixed)
-
-3. **Step 2 - Preferences:**
-
-   - Set time limit (30 mins, 45 mins, 1 hour, 90 mins)
-   - Select practice areas (Coding, Technical, System Design, Behavioral, Mixed)
-   - Paste job description for targeted preparation
-
-4. **Step 3 - Company:**
-
-   - Enter company name
-   - Click "Start Interview"
-
-5. **Interview:**
-   - Answer questions in the chat interface
-   - AI asks follow-up questions based on your responses
-   - Monitor time remaining in the header
-   - Download transcript anytime
-   - Click "End Interview" when done
 
 ## 🔧 Technical Architecture
 
@@ -132,13 +72,6 @@ Open [http://localhost:3000/mock-interview](http://localhost:3000/mock-interview
 
 ### Components
 
-#### `interview-setup.tsx`
-
-- 3-step wizard for interview configuration
-- Position, experience level, interview type selection
-- Time limit and practice area preferences
-- Job description input
-
 #### `mock-interview-chat.tsx`
 
 - Real-time chat interface
@@ -156,13 +89,6 @@ Open [http://localhost:3000/mock-interview](http://localhost:3000/mock-interview
 ## 🤖 AI Integration
 
 ### Hugging Face API
-
-The platform uses the **Mistral-7B-Instruct** model via Hugging Face API:
-
-```
-Model: mistralai/Mistral-7B-Instruct-v0.1
-API: https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1/v1/chat/completions
-```
 
 **Features:**
 
@@ -316,25 +242,6 @@ Configure environment variables in Vercel dashboard:
 - [Hugging Face API](https://huggingface.co/docs/api-inference/quicktour)
 - [shadcn/ui Components](https://ui.shadcn.com/)
 - [TailwindCSS](https://tailwindcss.com/)
-
-## 🤝 Contributing
-
-To add new features or interview types:
-
-1. Update `interview-setup.tsx` to add new options
-2. Modify `route.ts` to handle new interview types
-3. Add corresponding fallback questions
-4. Test with `mock-interview-chat.tsx`
-
-## 📋 Next Steps
-
-- [ ] Add user authentication
-- [ ] Implement database for storing interview history
-- [ ] Add scoring and feedback system
-- [ ] Create interview analytics dashboard
-- [ ] Add more AI models/providers
-- [ ] Implement real-time collaboration features
-- [ ] Add mobile app version
 
 ## 📄 License
 
