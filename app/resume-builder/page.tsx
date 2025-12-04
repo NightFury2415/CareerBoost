@@ -102,7 +102,7 @@ export default function ResumeBuilder() {
     try {
       const apiBase =
         process.env.NEXT_PUBLIC_PDF_API_BASE ??
-        "https://careerboost-9ehw.onrender.com";
+        "https://careerboost-8521.onrender.com/api/pdf";
 
       const res = await fetch(`${apiBase}/api/pdf`, {
         method: "POST",
