@@ -1,42 +1,55 @@
-import type { Metadata } from 'next'
+import type { Metadata } from "next";
 
-import { Analytics } from '@vercel/analytics/next'
-import './globals.css'
+import { Analytics } from "@vercel/analytics/next";
+import "./globals.css";
 
-import { Plus_Jakarta_Sans as V0_Font_Plus_Jakarta_Sans, IBM_Plex_Mono as V0_Font_IBM_Plex_Mono, Lora as V0_Font_Lora } from 'next/font/google'
+import {
+  Plus_Jakarta_Sans as V0_Font_Plus_Jakarta_Sans,
+  IBM_Plex_Mono as V0_Font_IBM_Plex_Mono,
+  Lora as V0_Font_Lora,
+} from "next/font/google";
 
 // Initialize fonts
-const _plusJakartaSans = V0_Font_Plus_Jakarta_Sans({ subsets: ['latin'], weight: ["200","300","400","500","600","700","800"] })
-const _ibmPlexMono = V0_Font_IBM_Plex_Mono({ subsets: ['latin'], weight: ["100","200","300","400","500","600","700"] })
-const _lora = V0_Font_Lora({ subsets: ['latin'], weight: ["400","500","600","700"] })
+const _plusJakartaSans = V0_Font_Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["200", "300", "400", "500", "600", "700", "800"],
+});
+const _ibmPlexMono = V0_Font_IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["100", "200", "300", "400", "500", "600", "700"],
+});
+const _lora = V0_Font_Lora({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
-  generator: 'v0.app',
+  title: "CareerBoost",
+  description: "Created by Dev and Malav",
+  generator: "v0.app",
   icons: {
     icon: [
       {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
+        url: "/icon-light-32x32.png",
+        media: "(prefers-color-scheme: light)",
       },
       {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
+        url: "/icon-dark-32x32.png",
+        media: "(prefers-color-scheme: dark)",
       },
       {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
+        url: "/icon.svg",
+        type: "image/svg+xml",
       },
     ],
-    apple: '/apple-icon.png',
+    apple: "/apple-icon.png",
   },
-}
+};
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode
+  children: React.ReactNode;
 }>) {
   return (
     <html lang="en">
@@ -45,5 +58,5 @@ export default function RootLayout({
         <Analytics />
       </body>
     </html>
-  )
+  );
 }
