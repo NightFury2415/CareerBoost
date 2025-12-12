@@ -55,22 +55,20 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Google Analytics */}
+        {/* Google tag (gtag.js) */}
         <Script
           async
-          src="https://www.googletagmanager.com/gtag/js?id=G-5LQNPH4BB1"
-          strategy="afterInteractive"
+          src="https://www.googletagmanager.com/gtag/js?id=G-SXR0SWVVP1"
+          strategy="beforeInteractive"
         />
         <Script
           id="google-analytics"
-          strategy="afterInteractive"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', 'G-5LQNPH4BB1');
-            `,
+            __html: `window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-SXR0SWVVP1');`,
           }}
         />
       </head>
