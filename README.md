@@ -1,6 +1,7 @@
 # AI Mock Interview Setup Guide
 
 CareerBoost is a Next.js-based platform for practicing interviews with AI-powered adaptive questioning.
+https://career-boost-l8l5dc6b9-nightfury2415s-projects.vercel.app/
 
 ## 🚀 Quick Start
 
